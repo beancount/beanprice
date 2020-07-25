@@ -28,7 +28,7 @@ Timezone information: Input and output datetimes are limited to dates, and I
 believe the dates are presumed to live in the timezone of each particular data
 source. (It's unclear, not documented.)
 """
-__copyright__ = "Copyright (C) 2018  Martin Blais"
+__copyright__ = "Copyright (C) 2018-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import collections

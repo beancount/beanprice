@@ -14,7 +14,7 @@ https://query1.finance.yahoo.com/v8/finance/chart/SYMBOL
 Timezone information: Input and output datetimes are specified via UNIX
 timestamps, but the timezone of the particular market is included in the output.
 """
-__copyright__ = "Copyright (C) 2015-2018  Martin Blais"
+__copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import datetime

@@ -5,7 +5,7 @@ This is a really fantastic exchange API with a lot of relevant information.
 Timezone information: There is currency no support for historical prices. The
 output datetime is provided as a UNIX timestamp.
 """
-__copyright__ = "Copyright (C) 2018  Martin Blais"
+__copyright__ = "Copyright (C) 2018-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import datetime
