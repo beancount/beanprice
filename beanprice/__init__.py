@@ -24,10 +24,10 @@ supplementary fetcher codes without having to modify this script.
 Default implementations are provided to provide access to prices from Yahoo!
 Finance or Google Finance, which cover a large universe of common public
 investment types (e.g. stock tickers). As a convenience, the module name is
-always first searched under the "beancount.prices.sources" package, where those
+always first searched under the "beanprice.sources" package, where those
 default source implementations live. This is how, for example, in order to use
 the provided Google Finance data fetcher you don't have to write
-"beancount.prices.sources.yahoo/AAPL" but simply "yahoo/AAPL".
+"beanprice.sources.yahoo/AAPL" but simply "yahoo/AAPL".
 
 Date
 ----

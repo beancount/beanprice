@@ -9,7 +9,7 @@ from unittest import mock
 
 import requests
 
-from beancount.prices.sources import tsp
+from beanprice.sources import tsp
 from beancount.core.number import D
 
 

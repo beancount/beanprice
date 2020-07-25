@@ -8,8 +8,8 @@ from unittest import mock
 from dateutil import tz
 import requests
 
-from beancount.prices import source
-from beancount.prices.sources import iex
+from beanprice import source
+from beanprice.sources import iex
 from beancount.core.number import D
 from beancount.utils import date_utils
 

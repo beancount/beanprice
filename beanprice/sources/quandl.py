@@ -41,7 +41,7 @@ from dateutil import tz
 import requests
 
 from beancount.core.number import D
-from beancount.prices import source
+from beanprice import source
 
 
 class QuandlError(ValueError):
@@ -121,9 +121,9 @@ class Source(source.Source):
     "Quandl API price extractor."
 
     def get_latest_price(self, ticker):
-        """See contract in beancount.prices.source.Source."""
+        """See contract in beanprice.source.Source."""
         return fetch_time_series(ticker)
 
     def get_historical_price(self, ticker, time):
-        """See contract in beancount.prices.source.Source."""
+        """See contract in beanprice.source.Source."""
         return fetch_time_series(ticker, time)

@@ -14,9 +14,9 @@ from unittest import mock
 
 from dateutil import tz
 
-from beancount.prices.source import SourcePrice
-from beancount.prices import price
-from beancount.prices.sources import yahoo
+from beanprice.source import SourcePrice
+from beanprice import price
+from beanprice.sources import yahoo
 from beancount.core.number import D
 from beancount.utils import test_utils
 from beancount.parser import cmptest
@@ -74,14 +74,14 @@ class TestCache(unittest.TestCase):
 
     def test_fetch_cached_price__disabled(self):
         # Latest.
-        with mock.patch('beancount.prices.price._CACHE', None):
+        with mock.patch('beanprice.price._CACHE', None):
             self.assertIsNone(price._CACHE)
             source = mock.MagicMock()
             price.fetch_cached_price(source, 'HOOL', None)
             self.assertTrue(source.get_latest_price.called)
 
         # Historical.
-        with mock.patch('beancount.prices.price._CACHE', None):
+        with mock.patch('beanprice.price._CACHE', None):
             self.assertIsNone(price._CACHE)
             source = mock.MagicMock()
             price.fetch_cached_price(source, 'HOOL', datetime.date.today())
@@ -119,7 +119,7 @@ class TestCache(unittest.TestCase):
 
             # Cache expired.
             time_beyond = datetime.datetime.now() + price._CACHE.expiration * 2
-            with mock.patch('beancount.prices.price.now', return_value=time_beyond):
+            with mock.patch('beanprice.price.now', return_value=time_beyond):
                 result = price.fetch_cached_price(source, 'HOOL', None)
                 self.assertTrue(source.get_latest_price.called)
                 self.assertEqual(1, len(price._CACHE))
@@ -267,7 +267,7 @@ class TestTimezone(unittest.TestCase):
 class TestInverted(unittest.TestCase):
 
     def setUp(self):
-        fetch_cached = mock.patch('beancount.prices.price.fetch_cached_price').start()
+        fetch_cached = mock.patch('beanprice.price.fetch_cached_price').start()
         fetch_cached.return_value = SourcePrice(
             D('125.00'), datetime.datetime(2015, 11, 22, 16, 0, 0, tzinfo=tz.tzlocal()),
             'JPY')
@@ -300,7 +300,7 @@ class TestImportSource(unittest.TestCase):
         for name in 'oanda', 'yahoo':
             module = price.import_source(name)
             self.assertIsInstance(module, types.ModuleType)
-        module = price.import_source('beancount.prices.sources.yahoo')
+        module = price.import_source('beanprice.sources.yahoo')
         self.assertIsInstance(module, types.ModuleType)
 
     def test_import_source_invalid(self):
@@ -328,7 +328,7 @@ class TestParseSource(unittest.TestCase):
         with self.assertRaises(ValueError):
             psource = price.parse_single_source('yahoo/CNYUSD&X')
 
-        psource = price.parse_single_source('beancount.prices.sources.yahoo/AAPL')
+        psource = price.parse_single_source('beanprice.sources.yahoo/AAPL')
         self.assertEqual(PS(yahoo, 'AAPL', False), psource)
 
 
@@ -346,37 +346,37 @@ class TestParseSourceMap(unittest.TestCase):
     def test_source_map_onecur_single(self):
         smap = price.parse_source_map('USD:yahoo/AAPL')
         self.assertEqual(
-            {'USD': [PS('beancount.prices.sources.yahoo', 'AAPL', False)]},
+            {'USD': [PS('beanprice.sources.yahoo', 'AAPL', False)]},
             self._clean_source_map(smap))
 
     def test_source_map_onecur_multiple(self):
         smap = price.parse_source_map('USD:oanda/USDCAD,yahoo/CAD=X')
         self.assertEqual(
-            {'USD': [PS('beancount.prices.sources.oanda', 'USDCAD', False),
-                     PS('beancount.prices.sources.yahoo', 'CAD=X', False)]},
+            {'USD': [PS('beanprice.sources.oanda', 'USDCAD', False),
+                     PS('beanprice.sources.yahoo', 'CAD=X', False)]},
             self._clean_source_map(smap))
 
     def test_source_map_manycur_single(self):
         smap = price.parse_source_map('USD:yahoo/USDCAD '
                                             'CAD:yahoo/CAD=X')
         self.assertEqual(
-            {'USD': [PS('beancount.prices.sources.yahoo', 'USDCAD', False)],
-             'CAD': [PS('beancount.prices.sources.yahoo', 'CAD=X', False)]},
+            {'USD': [PS('beanprice.sources.yahoo', 'USDCAD', False)],
+             'CAD': [PS('beanprice.sources.yahoo', 'CAD=X', False)]},
             self._clean_source_map(smap))
 
     def test_source_map_manycur_multiple(self):
         smap = price.parse_source_map('USD:yahoo/GBPUSD,oanda/GBPUSD '
                                             'CAD:yahoo/GBPCAD')
         self.assertEqual(
-            {'USD': [PS('beancount.prices.sources.yahoo', 'GBPUSD', False),
-                     PS('beancount.prices.sources.oanda', 'GBPUSD', False)],
-             'CAD': [PS('beancount.prices.sources.yahoo', 'GBPCAD', False)]},
+            {'USD': [PS('beanprice.sources.yahoo', 'GBPUSD', False),
+                     PS('beanprice.sources.oanda', 'GBPUSD', False)],
+             'CAD': [PS('beanprice.sources.yahoo', 'GBPCAD', False)]},
             self._clean_source_map(smap))
 
     def test_source_map_inverse(self):
         smap = price.parse_source_map('USD:yahoo/^GBPUSD')
         self.assertEqual(
-            {'USD': [PS('beancount.prices.sources.yahoo', 'GBPUSD', True)]},
+            {'USD': [PS('beanprice.sources.yahoo', 'GBPUSD', True)]},
             self._clean_source_map(smap))
 
 

@@ -7,8 +7,8 @@ from dateutil import tz
 import requests
 
 from beancount.core.number import D
-from beancount.prices import source
-from beancount.prices.sources import coinbase
+from beanprice import source
+from beanprice.sources import coinbase
 
 
 def response(contents, status_code=requests.codes.ok):

@@ -23,7 +23,7 @@ from urllib import parse
 from dateutil import tz
 
 from beancount.core.number import D
-from beancount.prices import source
+from beanprice import source
 from beancount.utils import net_utils
 
 
@@ -108,7 +108,7 @@ class Source(source.Source):
     "OANDA price source extractor."
 
     def get_latest_price(self, ticker):
-        """See contract in beancount.prices.source.Source."""
+        """See contract in beanprice.source.Source."""
         time = datetime.datetime.now(tz.tzutc())
         params_dict = {
             'instrument': ticker,
@@ -119,7 +119,7 @@ class Source(source.Source):
         return _fetch_price(params_dict, time)
 
     def get_historical_price(self, ticker, time):
-        """See contract in beancount.prices.source.Source."""
+        """See contract in beanprice.source.Source."""
         time = time.astimezone(tz.tzutc())
         query_interval_begin = (time - datetime.timedelta(days=5))
         query_interval_end = (time + datetime.timedelta(days=1))

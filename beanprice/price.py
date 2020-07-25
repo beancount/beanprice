@@ -19,7 +19,7 @@ from concurrent import futures
 from dateutil import tz
 
 from beancount.core.number import ONE
-import beancount.prices
+import beanprice
 from beancount import loader
 from beancount.core import data
 from beancount.core import amount
@@ -52,7 +52,7 @@ PriceSource = collections.namedtuple('PriceSource', 'module symbol invert')
 
 
 # The Python package where the default sources are found.
-DEFAULT_PACKAGE = 'beancount.prices.sources'
+DEFAULT_PACKAGE = 'beanprice.sources'
 
 
 # Stand-in currency name for unknown currencies.
@@ -67,7 +67,7 @@ DEFAULT_EXPIRATION = datetime.timedelta(seconds=30*60)  # 30 mins.
 
 
 # The default source parser is back.
-DEFAULT_SOURCE = 'beancount.prices.sources.yahoo'
+DEFAULT_SOURCE = 'beanprice.sources.yahoo'
 
 
 def format_dated_price_str(dprice):
@@ -521,7 +521,7 @@ def process_args():
         jobs: A list of DatedPrice job objects.
         entries: A list of all the parsed entries.
     """
-    parser = version.ArgumentParser(description=beancount.prices.__doc__.splitlines()[0])
+    parser = version.ArgumentParser(description=beanprice.__doc__.splitlines()[0])
 
     # Input sources or filenames.
     parser.add_argument('sources', nargs='+', help=(

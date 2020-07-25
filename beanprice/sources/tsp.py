@@ -16,7 +16,7 @@ import datetime
 import requests
 
 from beancount.core.number import D
-from beancount.prices import source
+from beanprice import source
 
 # All of the TSP funds are in USD.
 CURRENCY = 'USD'
@@ -106,11 +106,11 @@ class Source(source.Source):
     "US Thrift Savings Plan API Price Extractor"
 
     def get_latest_price(self, fund):
-        """See contract in beancount.prices.source.Source."""
+        """See contract in beanprice.source.Source."""
         return self.get_historical_price(fund, datetime.datetime.now())
 
     def get_historical_price(self, fund, time):
-        """See contract in beancount.prices.source.Source."""
+        """See contract in beanprice.source.Source."""
         if requests is None:
             raise TSPError("You must install the 'requests' library.")
 

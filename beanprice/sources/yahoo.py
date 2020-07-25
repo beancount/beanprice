@@ -23,7 +23,7 @@ from typing import Dict, Any
 import requests
 
 from beancount.core.number import D
-from beancount.prices import source
+from beanprice import source
 
 
 class YahooError(ValueError):
@@ -73,7 +73,7 @@ class Source(source.Source):
     "Yahoo Finance CSV API price extractor."
 
     def get_latest_price(self, ticker):
-        """See contract in beancount.prices.source.Source."""
+        """See contract in beanprice.source.Source."""
 
         url = "https://query1.finance.yahoo.com/v7/finance/quote"
         fields = ['symbol', 'regularMarketPrice', 'regularMarketTime']
@@ -101,7 +101,7 @@ class Source(source.Source):
         return source.SourcePrice(price, trade_time, currency)
 
     def get_historical_price(self, ticker, time):
-        """See contract in beancount.prices.source.Source."""
+        """See contract in beanprice.source.Source."""
         if requests is None:
             raise YahooError("You must install the 'requests' library.")
         url = "https://query1.finance.yahoo.com/v8/finance/chart/{}".format(ticker)
