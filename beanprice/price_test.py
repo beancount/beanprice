@@ -272,7 +272,7 @@ class TestInverted(unittest.TestCase):
             D('125.00'), datetime.datetime(2015, 11, 22, 16, 0, 0, tzinfo=tz.tzlocal()),
             'JPY')
         self.dprice = price.DatedPrice('JPY', 'USD', datetime.date(2015, 11, 22),
-                                             None)
+                                       None)
         self.addCleanup(mock.patch.stopall)
 
     def test_fetch_price__normal(self):
@@ -358,7 +358,7 @@ class TestParseSourceMap(unittest.TestCase):
 
     def test_source_map_manycur_single(self):
         smap = price.parse_source_map('USD:yahoo/USDCAD '
-                                            'CAD:yahoo/CAD=X')
+                                      'CAD:yahoo/CAD=X')
         self.assertEqual(
             {'USD': [PS('beanprice.sources.yahoo', 'USDCAD', False)],
              'CAD': [PS('beanprice.sources.yahoo', 'CAD=X', False)]},
@@ -366,7 +366,7 @@ class TestParseSourceMap(unittest.TestCase):
 
     def test_source_map_manycur_multiple(self):
         smap = price.parse_source_map('USD:yahoo/GBPUSD,oanda/GBPUSD '
-                                            'CAD:yahoo/GBPCAD')
+                                      'CAD:yahoo/GBPCAD')
         self.assertEqual(
             {'USD': [PS('beanprice.sources.yahoo', 'GBPUSD', False),
                      PS('beanprice.sources.oanda', 'GBPUSD', False)],
@@ -410,16 +410,16 @@ class TestFilters(unittest.TestCase):
           Assets:US:Invest:Margin
         """
         jobs = price.get_price_jobs_at_date(entries, datetime.date(2014, 1, 1),
-                                                  False, None)
+                                            False, None)
         self.assertEqual(set(), {(job.base, job.quote) for job in jobs})
 
         jobs = price.get_price_jobs_at_date(entries, datetime.date(2014, 6, 1),
-                                                  False, None)
+                                            False, None)
         self.assertEqual({('QQQ', 'USD'), ('VEA', 'USD')},
                          {(job.base, job.quote) for job in jobs})
 
         jobs = price.get_price_jobs_at_date(entries, datetime.date(2014, 10, 1),
-                                                  False, None)
+                                            False, None)
         self.assertEqual({('VEA', 'USD')},
                          {(job.base, job.quote) for job in jobs})
 

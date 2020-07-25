@@ -106,8 +106,8 @@ class QuandlPriceFetcher(unittest.TestCase):
                         'frequency': 'daily',
                         'id': 11304017,
                         'limit': 1,
-                        'name': 'Alphabet Inc (GOOGL) Prices, Dividends, Splits and '
-                        'Trading Volume',
+                        'name': ('Alphabet Inc (GOOGL) Prices, Dividends, Splits and '
+                                 'Trading Volume'),
                         'newest_available_date': '2018-03-27',
                         'oldest_available_date': '2004-08-19',
                         'order': None,

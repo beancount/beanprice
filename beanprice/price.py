@@ -536,8 +536,8 @@ def process_args():
         "Print out progress log. Specify twice for debugging info."))
 
     parser.add_argument('-d', '--date', action='store',
-                        type=date_utils.parse_date_liberally, help=(
-        "Specify the date for which to fetch the prices."))
+                        type=date_utils.parse_date_liberally,
+                        help=("Specify the date for which to fetch the prices."))
 
     parser.add_argument('-i', '--inactive', action='store_true', help=(
         "Select all commodities from input files, not just the ones active on the date"))

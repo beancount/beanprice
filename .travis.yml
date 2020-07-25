@@ -1,0 +1,20 @@
+dist: focal
+
+language: python
+python:
+  - "3.8"
+
+addons:
+  apt:
+    packages:
+      - gnupg
+      - zip
+      - wget
+      - pkg-config
+
+install:
+  - pip install -r requirements_dev.txt
+
+script:
+  - pytest beanprice
+  - pylint beanprice
