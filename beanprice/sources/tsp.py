@@ -42,10 +42,10 @@ TSP_FUND_NAMES = [
 ]
 
 csv.register_dialect('tsp',
-    delimiter=',',
-    quoting=csv.QUOTE_NONE,
-    quotechar='',
-    lineterminator='\n')
+                     delimiter=',',
+                     quoting=csv.QUOTE_NONE,
+                     quotechar='',
+                     lineterminator='\n')
 
 class TSPError(ValueError):
     "An error from the Thrift Savings Plan (TSP) API."
