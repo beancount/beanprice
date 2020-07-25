@@ -24,7 +24,7 @@ from dateutil import tz
 
 from beancount.core.number import D
 from beanprice import source
-from beancount.utils import net_utils
+from beanprice import net_utils
 
 
 URL = "https://api-fxtrade.oanda.com/v1/candles"

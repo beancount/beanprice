@@ -5,6 +5,21 @@ py_library(
     srcs = ["__init__.py"],
 )
 
+
+py_library(
+    name = "net_utils",
+    srcs = ["net_utils.py"],
+)
+
+py_test(
+    name = "net_utils_test",
+    srcs = ["net_utils_test.py"],
+    deps = [
+        ":net_utils",
+    ],
+)
+
+
 py_library(
     name = "price",
     srcs = ["price.py"],

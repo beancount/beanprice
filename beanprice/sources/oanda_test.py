@@ -14,7 +14,7 @@ from dateutil import tz
 from beanprice.sources import oanda
 from beanprice import source
 from beancount.core.number import D
-from beancount.utils import net_utils
+from beanprice import net_utils
 from beancount.utils import date_utils
 
 
