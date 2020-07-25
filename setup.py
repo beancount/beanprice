@@ -24,6 +24,9 @@ setup(name="beanprice",
       packages=find_packages(),
 
       install_requires=[
+          # Beancount library itself.
+          'beancount',
+
           # Testing support now uses the pytest module.
           'pytest',
 
