@@ -1,0 +1,12 @@
+*.DS_Store
+*.a
+*.pyc
+*~
+.cache
+.idea
+.noseids
+.pytest_cache
+TAGS
+build
+dist
+__pycache__
