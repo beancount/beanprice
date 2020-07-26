@@ -14,13 +14,14 @@ from unittest import mock
 
 from dateutil import tz
 
-from beanprice.source import SourcePrice
-from beanprice import price
-from beanprice.sources import yahoo
 from beancount.core.number import D
 from beancount.utils import test_utils
 from beancount.parser import cmptest
 from beancount import loader
+
+from beanprice.source import SourcePrice
+from beanprice import price
+from beanprice.sources import yahoo
 
 
 PS = price.PriceSource

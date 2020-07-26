@@ -11,11 +11,12 @@ from unittest import mock
 
 from dateutil import tz
 
-from beanprice.sources import oanda
-from beanprice import source
 from beancount.core.number import D
-from beanprice import net_utils
 from beancount.utils import date_utils
+
+from beanprice import net_utils
+from beanprice import source
+from beanprice.sources import oanda
 
 
 def response(code, contents=None):

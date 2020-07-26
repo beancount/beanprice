@@ -19,7 +19,6 @@ from concurrent import futures
 from dateutil import tz
 
 from beancount.core.number import ONE
-import beanprice
 from beancount import loader
 from beancount.core import data
 from beancount.core import amount
@@ -27,6 +26,8 @@ from beancount.parser import printer
 from beancount.ops import find_prices
 from beancount.utils import date_utils
 from beancount.parser import version
+
+import beanprice
 
 
 # A dated price source description.

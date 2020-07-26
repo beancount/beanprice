@@ -9,8 +9,9 @@ from unittest import mock
 
 import requests
 
-from beanprice.sources import tsp
 from beancount.core.number import D
+
+from beanprice.sources import tsp
 
 
 CURRENT_DATA = (

@@ -23,6 +23,7 @@ from typing import Dict, Any
 import requests
 
 from beancount.core.number import D
+
 from beanprice import source
 
 

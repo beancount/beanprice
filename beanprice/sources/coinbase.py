@@ -18,6 +18,7 @@ import requests
 from dateutil.tz import tz
 
 from beancount.core.number import D
+
 from beanprice import source
 
 

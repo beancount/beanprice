@@ -11,10 +11,10 @@ from unittest import mock
 from dateutil import tz
 import requests
 
-from beanprice.sources import yahoo
 from beancount.core.number import D
 from beancount.utils import date_utils
 
+from beanprice.sources import yahoo
 
 
 class MockResponse:

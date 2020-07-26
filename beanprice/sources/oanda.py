@@ -23,6 +23,7 @@ from urllib import parse
 from dateutil import tz
 
 from beancount.core.number import D
+
 from beanprice import source
 from beanprice import net_utils
 

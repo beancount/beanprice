@@ -16,6 +16,7 @@ import datetime
 import requests
 
 from beancount.core.number import D
+
 from beanprice import source
 
 # All of the TSP funds are in USD.
