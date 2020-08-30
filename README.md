@@ -25,6 +25,19 @@ You can obtain the source code from the official Git repository on Github:
 
 Install using the usual pip incantation.
 
+## Testing
+
+Run tests:
+
+```
+pytest beanprice
+```
+
+Lint:
+
+```
+pylint beanprice
+```
 
 ## Copyright and License
 
