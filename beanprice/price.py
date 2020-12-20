@@ -540,10 +540,24 @@ def process_args():
                         type=date_utils.parse_date_liberally,
                         help=("Specify the date for which to fetch the prices."))
 
+    parser.add_argument('--update', action='store_true', help=(
+        "Fetch prices from most recent price for each source "
+        "up to present day or specified --date. See also "
+        "--update-rate, --update-compress options."))
+
+    parser.add_argument('--update-rate', choices=['daily', 'weekday', 'weekly'],
+                        default='weekday',
+                        help=("Specify how often dates are fetched. Options are daily, "
+                              "weekday, or weekly (fridays)"))
+
+    parser.add_argument('--update-compress', action='store', type=int, default=0, help=(
+        "Specify the number of inactive days to ignore. This option ignored if --inactive "
+        "used."))
+
     parser.add_argument('-i', '--inactive', action='store_true', help=(
         "Select all commodities from input files, not just the ones active on the date"))
 
-    parser.add_argument('-u', '--undeclared', action='store', help=(
+    parser.add_argument('-u', '--undeclared', action='store_true', help=(
         "Include commodities viewed in the file even without a "
         "corresponding Commodity directive, from this default source. "
         "The currency name itself is used as the lookup symbol in this default source."))
@@ -586,6 +600,9 @@ def process_args():
     logging.basicConfig(level=verbose_levels[args.verbose],
                         format='%(levelname)-8s: %(message)s')
 
+    if args.undeclared:
+        args.undeclared = DEFAULT_SOURCE
+
     if args.all:
         args.inactive = args.clobber = True
         args.undeclared = DEFAULT_SOURCE
@@ -594,7 +611,9 @@ def process_args():
     setup_cache(args.cache_filename, args.clear_cache)
 
     # Get the list of DatedPrice jobs to get from the arguments.
+    dates = [args.date or None]
     logging.info("Processing at date: %s", args.date or datetime.date.today())
+
     jobs = []
     all_entries = []
     dcontext = None
@@ -611,8 +630,32 @@ def process_args():
                 parser.error(msg.format(source_str))
             else:
                 for currency, psources in psource_map.items():
-                    jobs.append(DatedPrice(
-                        psources[0].symbol, currency, args.date, psources))
+                    for date in dates:
+                        jobs.append(DatedPrice(
+                            psources[0].symbol, currency, date, psources))
+    elif args.update:
+        # Use Beancount input filename sources to create
+        # prices jobs up to present time.
+        for filename in args.sources:
+            if not path.exists(filename) or not path.isfile(filename):
+                parser.error('File does not exist: "{}"; '
+                             'did you mean to use -e?'.format(filename))
+                continue
+            logging.info('Loading "%s"', filename)
+            entries, errors, options_map = loader.load_file(filename, log_errors=sys.stderr)
+            if dcontext is None:
+                dcontext = options_map['dcontext']
+            if args.date is None:
+                latest_date = datetime.date.today()
+            else:
+                latest_date = args.date
+            jobs.extend(get_price_jobs_up_to_date(entries,
+                                                  latest_date,
+                                                  args.inactive,
+                                                  args.undeclared,
+                                                  args.update_rate,
+                                                  args.update_compress))
+            all_entries.extend(entries)
     else:
         # Interpret the arguments as Beancount input filenames.
         for filename in args.sources:
@@ -624,10 +667,10 @@ def process_args():
             entries, errors, options_map = loader.load_file(filename, log_errors=sys.stderr)
             if dcontext is None:
                 dcontext = options_map['dcontext']
-            jobs.extend(
-                get_price_jobs_at_date(
-                    entries, args.date, args.inactive, args.undeclared))
-            all_entries.extend(entries)
+            for date in dates:
+                jobs.extend(get_price_jobs_at_date(
+                    entries, date, args.inactive, args.undeclared))
+                all_entries.extend(entries)
 
     return args, jobs, data.sorted(all_entries), dcontext
 
@@ -649,6 +692,10 @@ def main():
     # Sort them by currency, regardless of date (the dates should be close
     # anyhow, and we tend to put them in chunks in the input files anyhow).
     price_entries = sorted(price_entries, key=lambda e: e.currency)
+    if args.update:
+        # Sort additionally by date, to have an output consistent
+        # with single date bean-price output.
+        price_entries = sorted(price_entries, key=lambda e: e.date)
 
     # Avoid clobber, remove redundant entries.
     if not args.clobber:
