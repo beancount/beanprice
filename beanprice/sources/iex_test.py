@@ -4,11 +4,11 @@ __license__ = "GNU GPLv2"
 import datetime
 import unittest
 from unittest import mock
+from decimal import Decimal
 
 from dateutil import tz
 import requests
 
-from beancount.core.number import D
 from beancount.utils import date_utils
 
 from beanprice import source
@@ -40,7 +40,7 @@ class IEXPriceFetcher(unittest.TestCase):
         with response(contents):
             srcprice = iex.fetch_quote('HOOL')
             self.assertIsInstance(srcprice, source.SourcePrice)
-            self.assertEqual(D('183.61'), srcprice.price)
+            self.assertEqual(Decimal('183.61'), srcprice.price)
             self.assertEqual(
                 datetime.datetime(2020, 5, 22, 19, 59, 56, 30000, tzinfo=tz.tzutc()),
                 srcprice.time.astimezone(tz.tzutc()))

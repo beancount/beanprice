@@ -11,10 +11,10 @@ import types
 import os
 from os import path
 from unittest import mock
+from decimal import Decimal
 
 from dateutil import tz
 
-from beancount.core.number import D
 from beancount.utils import test_utils
 from beancount.parser import cmptest
 from beancount import loader
@@ -94,7 +94,7 @@ class TestCache(unittest.TestCase):
         try:
             price.setup_cache(tmpfile, False)
 
-            srcprice = SourcePrice(D('1.723'), datetime.datetime.now(tz.tzutc()), 'USD')
+            srcprice = SourcePrice(Decimal('1.723'), datetime.datetime.now(tz.tzutc()), 'USD')
             source = mock.MagicMock()
             source.get_latest_price.return_value = srcprice
             source.__file__ = '<module>'
@@ -114,7 +114,7 @@ class TestCache(unittest.TestCase):
             self.assertEqual(srcprice, result)
 
             srcprice2 = SourcePrice(
-                D('1.894'), datetime.datetime.now(tz.tzutc()), 'USD')
+                Decimal('1.894'), datetime.datetime.now(tz.tzutc()), 'USD')
             source.get_latest_price.reset_mock()
             source.get_latest_price.return_value = srcprice2
 
@@ -137,7 +137,7 @@ class TestCache(unittest.TestCase):
             price.setup_cache(tmpfile, False)
 
             srcprice = SourcePrice(
-                D('1.723'), datetime.datetime.now(tz.tzutc()), 'USD')
+                Decimal('1.723'), datetime.datetime.now(tz.tzutc()), 'USD')
             source = mock.MagicMock()
             source.get_historical_price.return_value = srcprice
             source.__file__ = '<module>'
@@ -258,7 +258,7 @@ class TestTimezone(unittest.TestCase):
     @mock.patch.object(price, 'fetch_cached_price')
     def test_fetch_price__naive_time_no_timeozne(self, fetch_cached):
         fetch_cached.return_value = SourcePrice(
-            D('125.00'), datetime.datetime(2015, 11, 22, 16, 0, 0), 'JPY')
+            Decimal('125.00'), datetime.datetime(2015, 11, 22, 16, 0, 0), 'JPY')
         dprice = price.DatedPrice('JPY', 'USD', datetime.date(2015, 11, 22), None)
         with self.assertRaises(ValueError):
             price.fetch_price(dprice._replace(sources=[
@@ -270,7 +270,7 @@ class TestInverted(unittest.TestCase):
     def setUp(self):
         fetch_cached = mock.patch('beanprice.price.fetch_cached_price').start()
         fetch_cached.return_value = SourcePrice(
-            D('125.00'), datetime.datetime(2015, 11, 22, 16, 0, 0, tzinfo=tz.tzlocal()),
+            Decimal('125.00'), datetime.datetime(2015, 11, 22, 16, 0, 0, tzinfo=tz.tzlocal()),
             'JPY')
         self.dprice = price.DatedPrice('JPY', 'USD', datetime.date(2015, 11, 22),
                                        None)
@@ -280,19 +280,19 @@ class TestInverted(unittest.TestCase):
         entry = price.fetch_price(self.dprice._replace(sources=[
             price.PriceSource(yahoo, 'USDJPY', False)]), False)
         self.assertEqual(('JPY', 'USD'), (entry.currency, entry.amount.currency))
-        self.assertEqual(D('125.00'), entry.amount.number)
+        self.assertEqual(Decimal('125.00'), entry.amount.number)
 
     def test_fetch_price__inverted(self):
         entry = price.fetch_price(self.dprice._replace(sources=[
             price.PriceSource(yahoo, 'USDJPY', True)]), False)
         self.assertEqual(('JPY', 'USD'), (entry.currency, entry.amount.currency))
-        self.assertEqual(D('0.008'), entry.amount.number)
+        self.assertEqual(Decimal('0.008'), entry.amount.number)
 
     def test_fetch_price__swapped(self):
         entry = price.fetch_price(self.dprice._replace(sources=[
             price.PriceSource(yahoo, 'USDJPY', True)]), True)
         self.assertEqual(('USD', 'JPY'), (entry.currency, entry.amount.currency))
-        self.assertEqual(D('125.00'), entry.amount.number)
+        self.assertEqual(Decimal('125.00'), entry.amount.number)
 
 
 class TestImportSource(unittest.TestCase):

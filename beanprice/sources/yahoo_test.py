@@ -11,7 +11,6 @@ from unittest import mock
 from dateutil import tz
 import requests
 
-from beancount.core.number import D
 from beancount.utils import date_utils
 
 from beanprice.sources import yahoo
@@ -54,7 +53,7 @@ class YahooFinancePriceFetcher(unittest.TestCase):
         with mock.patch('requests.get', return_value=response):
             srcprice = yahoo.Source().get_latest_price('XSP.TO')
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(D('29.99'), srcprice.price)
+        self.assertEqual(Decimal('29.99'), srcprice.price)
         timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/Toronto')
         self.assertEqual(datetime.datetime(2018, 3, 29, 15, 59, 49, tzinfo=timezone),
                          srcprice.time)
@@ -125,7 +124,7 @@ class YahooFinancePriceFetcher(unittest.TestCase):
             srcprice = yahoo.Source().get_historical_price(
                 'XSP.TO', datetime.datetime(2017, 11, 1, 16, 0, 0, tzinfo=tz.tzutc()))
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(D('29.469999313354492'), srcprice.price)
+        self.assertEqual(Decimal('29.469999313354492'), srcprice.price)
         timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/Toronto')
         self.assertEqual(datetime.datetime(2017, 11, 1, 9, 30, tzinfo=timezone),
                          srcprice.time)

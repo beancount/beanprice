@@ -9,8 +9,6 @@ from unittest import mock
 
 import requests
 
-from beancount.core.number import D
-
 from beanprice.sources import tsp
 
 
@@ -81,7 +79,7 @@ class TSPFinancePriceFetcher(unittest.TestCase):
         with mock.patch('requests.get', return_value=response):
             srcprice = tsp.Source().get_latest_price('L2050')
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(D('22.2736'), srcprice.price)
+        self.assertEqual(Decimal('22.2736'), srcprice.price)
         timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/New_York')
         self.assertEqual(datetime.datetime(2020, 7, 15, 16, 0, 0, tzinfo=timezone),
                          srcprice.time)
@@ -92,7 +90,7 @@ class TSPFinancePriceFetcher(unittest.TestCase):
         with mock.patch('requests.get', return_value=response):
             srcprice = tsp.Source().get_latest_price('SFund')
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(D('55.2910'), srcprice.price)
+        self.assertEqual(Decimal('55.2910'), srcprice.price)
         timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/New_York')
         self.assertEqual(datetime.datetime(2020, 7, 15, 16, 0, 0, tzinfo=timezone),
                          srcprice.time)
@@ -104,20 +102,20 @@ class TSPFinancePriceFetcher(unittest.TestCase):
             srcprice = tsp.Source().get_historical_price(
                 'CFund', time=datetime.datetime(2020, 6, 19))
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(D('45.7171'), srcprice.price)
+        self.assertEqual(Decimal('45.7171'), srcprice.price)
         timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/New_York')
         self.assertEqual(datetime.datetime(2020, 6, 19, 16, 0, 0, tzinfo=timezone),
                          srcprice.time)
         self.assertEqual('USD', srcprice.quote_currency)
 
     def test_get_historical_price_L2060(self):
-        # This fund did not exist until 01 Jul 2020. Ensuring we get a D(0.0) back.
+        # This fund did not exist until 01 Jul 2020. Ensuring we get a Decimal(0.0) back.
         response = MockResponse(textwrap.dedent(HISTORIC_DATA))
         with mock.patch('requests.get', return_value=response):
             srcprice = tsp.Source().get_historical_price(
                 'L2060', time=datetime.datetime(2020, 6, 19))
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(D('0.0'), srcprice.price)
+        self.assertEqual(Decimal('0.0'), srcprice.price)
         timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/New_York')
         self.assertEqual(datetime.datetime(2020, 6, 19, 16, 0, 0, tzinfo=timezone),
                          srcprice.time)

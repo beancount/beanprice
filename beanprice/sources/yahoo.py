@@ -18,11 +18,10 @@ __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import datetime
+from decimal import Decimal
 from typing import Dict, Any
 
 import requests
-
-from beancount.core.number import D
 
 from beanprice import source
 
@@ -37,7 +36,7 @@ def parse_response(response: requests.models.Response) -> Dict:
     Raises:
       YahooError: If there is an error in the response.
     """
-    json = response.json(parse_float=D)
+    json = response.json(parse_float=Decimal)
     content = next(iter(json.values()))
     if response.status_code != requests.codes.ok:
         raise YahooError("Status {}: {}".format(response.status_code, content['error']))
@@ -87,7 +86,7 @@ class Source(source.Source):
         response = requests.get(url, params=payload)
         result = parse_response(response)
         try:
-            price = D(result['regularMarketPrice'])
+            price = Decimal(result['regularMarketPrice'])
 
             timezone = datetime.timezone(
                 datetime.timedelta(hours=result['gmtOffSetMilliseconds'] / 3600000),
@@ -123,7 +122,7 @@ class Source(source.Source):
 
         timestamp_array = result['timestamp']
         close_array = result['indicators']['quote'][0]['close']
-        series = [(datetime.datetime.fromtimestamp(timestamp, tz=timezone), D(price))
+        series = [(datetime.datetime.fromtimestamp(timestamp, tz=timezone), Decimal(price))
                   for timestamp, price in zip(timestamp_array, close_array)]
 
         # Get the latest data returned.

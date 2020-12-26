@@ -19,10 +19,9 @@ import datetime
 import json
 import logging
 from urllib import parse
+from decimal import Decimal
 
 from dateutil import tz
-
-from beancount.core.number import D
 
 from beanprice import source
 from beanprice import net_utils
@@ -64,7 +63,7 @@ def _fetch_candles(params):
     data_string = response.read().decode('utf-8')
 
     # Parse it.
-    data = json.loads(data_string, parse_float=D)
+    data = json.loads(data_string, parse_float=Decimal)
     try:
         # Find the candle with the latest time before the given time we're searching
         # for.
@@ -73,7 +72,7 @@ def _fetch_candles(params):
         for candle in candles:
             candle_dt_utc = datetime.datetime.strptime(
                 candle['time'], r"%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=tz.tzutc())
-            candle_price = D(candle['openMid'])
+            candle_price = Decimal(candle['openMid'])
             time_prices.append((candle_dt_utc, candle_price))
     except KeyError:
         logging.error("Unexpected response data: %s", data)

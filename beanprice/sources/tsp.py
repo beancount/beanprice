@@ -13,9 +13,9 @@ __license__ = "GNU GPLv2"
 import csv
 from collections import OrderedDict
 import datetime
-import requests
+from decimal import Decimal
 
-from beancount.core.number import D
+import requests
 
 from beanprice import source
 
@@ -69,25 +69,23 @@ def parse_tsp_csv(response: requests.models.Response) -> OrderedDict:
         # There is indeed a period after the day of month.
         date = datetime.datetime.strptime(row['Date'], "%b %d. %Y")
         date = date.replace(hour=16, tzinfo=TIMEZONE)
-        prices = [
-            D(row['L Income']),
-            D(row['L 2025']),
-            D(row['L 2030']),
-            D(row['L 2035']),
-            D(row['L 2040']),
-            D(row['L 2045']),
-            D(row['L 2050']),
-            D(row['L 2055']),
-            D(row['L 2060']),
-            D(row['L 2065']),
-            D(row['G Fund']),
-            D(row['F Fund']),
-            D(row['C Fund']),
-            D(row['S Fund']),
-            D(row['I Fund'])
-        ]
-
-        data[date] = prices
+        names = ['L Income',
+                 'L 2025',
+                 'L 2030',
+                 'L 2035',
+                 'L 2040',
+                 'L 2045',
+                 'L 2050',
+                 'L 2055',
+                 'L 2060',
+                 'L 2065',
+                 'G Fund',
+                 'F Fund',
+                 'C Fund',
+                 'S Fund',
+                 'I Fund']
+        data[date] = [Decimal(row[name]) if row[name] else Decimal()
+                      for name in map(str.strip, names)]
 
     return OrderedDict(sorted(data.items(), key=lambda t: t[0], reverse=True))
 

@@ -1,12 +1,11 @@
 import datetime
 import unittest
+from decimal import Decimal
 
 from unittest import mock
 from dateutil import tz
 
 import requests
-
-from beancount.core.number import D
 
 from beanprice import source
 from beanprice.sources import coinbase
@@ -36,7 +35,7 @@ class CoinbasePriceFetcher(unittest.TestCase):
         with response(contents):
             srcprice = coinbase.Source().get_latest_price('BTC-GBP')
             self.assertIsInstance(srcprice, source.SourcePrice)
-            self.assertEqual(D('101.23456'), srcprice.price)
+            self.assertEqual(Decimal('101.23456'), srcprice.price)
             self.assertEqual('USD', srcprice.quote_currency)
 
     def test_historical_price(self):
@@ -47,7 +46,7 @@ class CoinbasePriceFetcher(unittest.TestCase):
             time = datetime.datetime(2018, 3, 27, 0, 0, 0, tzinfo=tz.tzutc())
             srcprice = coinbase.Source().get_historical_price('BTC-GBP', time)
             self.assertIsInstance(srcprice, source.SourcePrice)
-            self.assertEqual(D('101.23456'), srcprice.price)
+            self.assertEqual(Decimal('101.23456'), srcprice.price)
             self.assertEqual('USD', srcprice.quote_currency)
             self.assertEqual(datetime.datetime(2018, 3, 27, 0, 0, 0, tzinfo=tz.tzutc()),
                              srcprice.time)

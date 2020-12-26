@@ -4,11 +4,11 @@ __license__ = "GNU GPLv2"
 import datetime
 import unittest
 from unittest import mock
+from decimal import Decimal
 
 from dateutil import tz
 import requests
 
-from beancount.core.number import D
 from beancount.utils import date_utils
 
 from beanprice import source
@@ -121,7 +121,7 @@ class QuandlPriceFetcher(unittest.TestCase):
             srcprice = quandl.fetch_time_series('WIKI:FB', None)
             self.assertIsInstance(srcprice, source.SourcePrice)
 
-            self.assertEqual(D('1006.94'), srcprice.price)
+            self.assertEqual(Decimal('1006.94'), srcprice.price)
             self.assertEqual(datetime.datetime(2018, 3, 27, 0, 0, 0,
                                                tzinfo=tz.tzutc()),
                              srcprice.time.astimezone(tz.tzutc()))
@@ -160,7 +160,7 @@ class QuandlPriceFetcher(unittest.TestCase):
             srcprice = quandl.fetch_time_series('LBMA:GOLD:USD_(PM)', None)
             self.assertIsInstance(srcprice, source.SourcePrice)
 
-            self.assertEqual(D('1341.35'), srcprice.price)
+            self.assertEqual(Decimal('1341.35'), srcprice.price)
             self.assertEqual(datetime.datetime(2019, 6, 18, 0, 0, 0,
                                                tzinfo=tz.tzutc()),
                              srcprice.time.astimezone(tz.tzutc()))

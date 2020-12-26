@@ -35,12 +35,11 @@ import collections
 import datetime
 import re
 import os
+from decimal import Decimal
 
 from dateutil import tz
 
 import requests
-
-from beancount.core.number import D
 
 from beanprice import source
 
@@ -109,10 +108,10 @@ def fetch_time_series(ticker, time=None):
     # Gather price.
     # Quantize with the same precision default rendering of floats occur.
     price_float = data[data_index]
-    price = D(price_float)
+    price = Decimal(price_float)
     match = re.search(r'(\..*)', str(price_float))
     if match:
-        price = price.quantize(D(match.group(1)))
+        price = price.quantize(Decimal(match.group(1)))
 
     # Note: There is no currency information in the response (surprising).
     return source.SourcePrice(price, time, None)

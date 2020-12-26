@@ -9,11 +9,10 @@ __copyright__ = "Copyright (C) 2018-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import datetime
+from decimal import Decimal
 
 from dateutil import tz
 import requests
-
-from beancount.core.number import D
 
 from beanprice import source
 
@@ -37,7 +36,7 @@ def fetch_quote(ticker):
             response.text))
     result = results[0]
 
-    price = D(result['price']).quantize(D('0.01'))
+    price = Decimal(result['price']).quantize(Decimal('0.01'))
 
     # IEX is American markets.
     us_timezone = tz.gettz("America/New_York")

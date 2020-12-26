@@ -13,11 +13,10 @@ timestamps.
 """
 
 import datetime
+from decimal import Decimal
 
 import requests
 from dateutil.tz import tz
-
-from beancount.core.number import D
 
 from beanprice import source
 
@@ -39,7 +38,7 @@ def fetch_quote(ticker, time=None):
                                                                response.text))
     result = response.json()
 
-    price = D(result['data']['amount'])
+    price = Decimal(result['data']['amount'])
     if time is None:
         time = datetime.datetime.now(tz.tzutc())
     currency = result['data']['currency']
