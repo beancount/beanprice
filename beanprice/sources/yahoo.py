@@ -89,12 +89,12 @@ def get_price_series(ticker: str,
     result = parse_response(response)
 
     meta = result['meta']
-    tz = timezone(timedelta(hours=meta['gmtoffset'] / 3600),
-                  meta['exchangeTimezoneName'])
+    tzone = timezone(timedelta(hours=meta['gmtoffset'] / 3600),
+                     meta['exchangeTimezoneName'])
 
     timestamp_array = result['timestamp']
     close_array = result['indicators']['quote'][0]['close']
-    series = [(datetime.fromtimestamp(timestamp, tz=tz), D(price))
+    series = [(datetime.fromtimestamp(timestamp, tz=tzone), D(price))
               for timestamp, price in zip(timestamp_array, close_array)]
 
     currency = result['meta']['currency']
@@ -120,13 +120,14 @@ class Source(source.Source):
         try:
             price = D(result['regularMarketPrice'])
 
-            tz = timezone(
+            tzone = timezone(
                 timedelta(hours=result['gmtOffSetMilliseconds'] / 3600000),
                 result['exchangeTimezoneName'])
             trade_time = datetime.fromtimestamp(result['regularMarketTime'],
-                                                tz=tz)
-        except KeyError:
-            raise YahooError("Invalid response from Yahoo: {}".format(repr(result)))
+                                                tz=tzone)
+        except KeyError as exc:
+            raise YahooError("Invalid response from Yahoo: {}".format(
+                repr(result))) from exc
 
         currency = parse_currency(result)
 
@@ -153,8 +154,6 @@ class Source(source.Source):
                          time_begin: datetime,
                          time_end: datetime) -> Optional[List[source.SourcePrice]]:
         """See contract in beanprice.source.Source."""
-
-        series, currency = get_price_series(ticker, time - timedelta(days=5), time)
-
+        series, currency = get_price_series(ticker, time_begin, time_end)
         return [source.SourcePrice(price, time, currency)
                 for price, time in series]
