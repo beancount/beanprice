@@ -94,7 +94,8 @@ class TestCache(unittest.TestCase):
         try:
             price.setup_cache(tmpfile, False)
 
-            srcprice = SourcePrice(Decimal('1.723'), datetime.datetime.now(tz.tzutc()), 'USD')
+            srcprice = SourcePrice(Decimal('1.723'), datetime.datetime.now(tz.tzutc()),
+                                   'USD')
             source = mock.MagicMock()
             source.get_latest_price.return_value = srcprice
             source.__file__ = '<module>'
@@ -270,7 +271,8 @@ class TestInverted(unittest.TestCase):
     def setUp(self):
         fetch_cached = mock.patch('beanprice.price.fetch_cached_price').start()
         fetch_cached.return_value = SourcePrice(
-            Decimal('125.00'), datetime.datetime(2015, 11, 22, 16, 0, 0, tzinfo=tz.tzlocal()),
+            Decimal('125.00'), datetime.datetime(2015, 11, 22, 16, 0, 0,
+                                                 tzinfo=tz.tzlocal()),
             'JPY')
         self.dprice = price.DatedPrice('JPY', 'USD', datetime.date(2015, 11, 22),
                                        None)
