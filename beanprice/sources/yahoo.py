@@ -156,4 +156,4 @@ class Source(source.Source):
         """See contract in beanprice.source.Source."""
         series, currency = get_price_series(ticker, time_begin, time_end)
         return [source.SourcePrice(price, time, currency)
-                for price, time in series]
+                for time, price in series]
