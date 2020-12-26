@@ -73,7 +73,7 @@ _DEFAULT_PARAMS = {
 
 def get_price_series(ticker: str,
                      time_begin: datetime,
-                     time_end: datetime) -> List[Tuple[datetime, Decimal]]:
+                     time_end: datetime) -> Tuple[List[Tuple[datetime, Decimal]], str]:
     """Return a series of timestamped prices."""
 
     if requests is None:
