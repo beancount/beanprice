@@ -17,8 +17,9 @@ timestamps, but the timezone of the particular market is included in the output.
 __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
-import datetime
-from typing import Dict, Any
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
@@ -70,10 +71,40 @@ _DEFAULT_PARAMS = {
 }
 
 
+def get_price_series(ticker: str,
+                     time_begin: datetime,
+                     time_end: datetime) -> List[Tuple[datetime, Decimal]]:
+    """Return a series of timestamped prices."""
+
+    if requests is None:
+        raise YahooError("You must install the 'requests' library.")
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/{}".format(ticker)
+    payload = {
+        'period1': int(time_begin.timestamp()),
+        'period2': int(time_end.timestamp()),
+        'interval': '1d',
+    }
+    payload.update(_DEFAULT_PARAMS)
+    response = requests.get(url, params=payload)
+    result = parse_response(response)
+
+    meta = result['meta']
+    tz = timezone(timedelta(hours=meta['gmtoffset'] / 3600),
+                  meta['exchangeTimezoneName'])
+
+    timestamp_array = result['timestamp']
+    close_array = result['indicators']['quote'][0]['close']
+    series = [(datetime.fromtimestamp(timestamp, tz=tz), D(price))
+              for timestamp, price in zip(timestamp_array, close_array)]
+
+    currency = result['meta']['currency']
+    return series, currency
+
+
 class Source(source.Source):
     "Yahoo Finance CSV API price extractor."
 
-    def get_latest_price(self, ticker):
+    def get_latest_price(self, ticker: str) -> Optional[source.SourcePrice]:
         """See contract in beanprice.source.Source."""
 
         url = "https://query1.finance.yahoo.com/v7/finance/quote"
@@ -89,11 +120,11 @@ class Source(source.Source):
         try:
             price = D(result['regularMarketPrice'])
 
-            timezone = datetime.timezone(
-                datetime.timedelta(hours=result['gmtOffSetMilliseconds'] / 3600000),
+            tz = timezone(
+                timedelta(hours=result['gmtOffSetMilliseconds'] / 3600000),
                 result['exchangeTimezoneName'])
-            trade_time = datetime.datetime.fromtimestamp(result['regularMarketTime'],
-                                                         tz=timezone)
+            trade_time = datetime.fromtimestamp(result['regularMarketTime'],
+                                                tz=tz)
         except KeyError:
             raise YahooError("Invalid response from Yahoo: {}".format(repr(result)))
 
@@ -101,32 +132,12 @@ class Source(source.Source):
 
         return source.SourcePrice(price, trade_time, currency)
 
-    def get_historical_price(self, ticker, time):
+    def get_historical_price(self, ticker: str,
+                             time: datetime) -> Optional[source.SourcePrice]:
         """See contract in beanprice.source.Source."""
-        if requests is None:
-            raise YahooError("You must install the 'requests' library.")
-        url = "https://query1.finance.yahoo.com/v8/finance/chart/{}".format(ticker)
-        dt_start = time - datetime.timedelta(days=5)
-        dt_end = time
-        payload = {
-            'period1': int(dt_start.timestamp()),
-            'period2': int(dt_end.timestamp()),
-            'interval': '1d',
-        }
-        payload.update(_DEFAULT_PARAMS)
-        response = requests.get(url, params=payload)
-        result = parse_response(response)
 
-        meta = result['meta']
-        timezone = datetime.timezone(datetime.timedelta(hours=meta['gmtoffset'] / 3600),
-                                     meta['exchangeTimezoneName'])
-
-        timestamp_array = result['timestamp']
-        close_array = result['indicators']['quote'][0]['close']
-        series = [(datetime.datetime.fromtimestamp(timestamp, tz=timezone), D(price))
-                  for timestamp, price in zip(timestamp_array, close_array)]
-
-        # Get the latest data returned.
+        # Get the latest data returned over the last 5 days.
+        series, currency = get_price_series(ticker, time - timedelta(days=5), time)
         latest = None
         for data_dt, price in sorted(series):
             if data_dt >= time:
@@ -135,5 +146,15 @@ class Source(source.Source):
         if latest is None:
             raise YahooError("Could not find price before {} in {}".format(time, series))
 
-        currency = result['meta']['currency']
         return source.SourcePrice(price, data_dt, currency)
+
+    def get_daily_prices(self,
+                         ticker: str,
+                         time_begin: datetime,
+                         time_end: datetime) -> Optional[List[source.SourcePrice]]:
+        """See contract in beanprice.source.Source."""
+
+        series, currency = get_price_series(ticker, time - timedelta(days=5), time)
+
+        return [source.SourcePrice(price, time, currency)
+                for price, time in series]

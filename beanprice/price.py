@@ -320,19 +320,23 @@ def get_price_jobs_at_date(entries,
     return sorted(jobs)
 
 
+# TODO(blais): This could be modified to use the get_daily_prices() interface,
+# or perhaps to extend it to intervals, and let the price source decide for
+# itself how to implement fetching (e.g., use a single call + filter, or use
+# multiple calls). Querying independently for each day is not the best strategy.
 def get_price_jobs_up_to_date(entries,
                               date_last=None,
                               inactive=False,
                               undeclared_source=None,
                               update_rate='weekday',
                               compress_days=1):
-    """Get a list of prices to fetch from a stream of entries,
-       going from their previous latest price up to the latest date.
+    """Get a list of trailing prices to fetch from a stream of entries.
 
-   Args:
+    The list of dates runs from the latest available price up to the latest date.
+
+    Args:
       entries: list of Beancount entries
-      date_last: The date up to where to find prices to
-                   as an exclusive range end.
+      date_last: The date up to where to find prices to as an exclusive range end.
       inactive: Include currencies with no balance at the given date. The default
         is to only include those currencies which have a non-zero balance.
       undeclared_source: A string, the name of the default source module to use to
@@ -383,6 +387,7 @@ def get_price_jobs_up_to_date(entries,
             if lifetimes_map[base_quote] is None:
                 # Insert never active commodities into lifetimes
                 # Start from date of currency directive
+                base, _ = base_quote
                 commodity_entry = commodity_map.get(base, None)
                 lifetimes_map[base_quote] = [(commodity_entry.date, None)]
             else:
