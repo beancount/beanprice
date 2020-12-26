@@ -27,9 +27,9 @@ from beancount.core import getters
 from beancount.ops import lifetimes
 from beancount.parser import printer
 from beancount.ops import find_prices
-from beancount.utils import date_utils
 from beancount.parser import version
 
+from beanprice import date_utils
 import beanprice
 
 

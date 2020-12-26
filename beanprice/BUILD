@@ -24,6 +24,7 @@ py_library(
     name = "price",
     srcs = ["price.py"],
     deps = [
+        ":date_utils",
         "//beancount/core:amount",
         "//beancount/core:data",
         "//beancount/core:number",
@@ -34,7 +35,6 @@ py_library(
         "//beancount/ops:find_prices",
         "//beancount/ops:lifetimes",
         "//beancount/prices:__init__",
-        "//beancount/utils:date_utils",
         "//beancount:loader",
     ],
 )
@@ -62,5 +62,18 @@ py_library(
     srcs = ["source.py"],
     deps = [
         "//beancount/core:number",
+    ],
+)
+
+py_library(
+    name = "date_utils",
+    srcs = ["date_utils.py"],
+)
+
+py_test(
+    name = "date_utils_test",
+    srcs = ["date_utils_test.py"],
+    deps = [
+        ":date_utils",
     ],
 )

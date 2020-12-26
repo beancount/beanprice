@@ -11,8 +11,7 @@ from unittest import mock
 from dateutil import tz
 import requests
 
-from beancount.utils import date_utils
-
+from beanprice import date_utils
 from beanprice.sources import yahoo
 
 

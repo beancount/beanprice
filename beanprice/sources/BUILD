@@ -16,7 +16,7 @@ py_test(
         "//beancount/core:number",
         "//beancount/prices:source",
         "//beancount/prices/sources:iex",
-        "//beancount/utils:date_utils",
+        "//beanprice:date_utils",
     ],
 )
 
@@ -34,10 +34,10 @@ py_test(
     name = "oanda_test",
     srcs = ["oanda_test.py"],
     deps = [
+        "//beanprice:date_utils",
         "//beancount/core:number",
         "//beancount/prices:source",
         "//beancount/prices/sources:oanda",
-        "//beancount/utils:date_utils",
         "//beancount/utils:net_utils",
     ],
 )
@@ -58,7 +58,7 @@ py_test(
         "//beancount/core:number",
         "//beancount/prices:source",
         "//beancount/prices/sources:quandl",
-        "//beancount/utils:date_utils",
+        "//beanprice:date_utils",
     ],
 )
 
@@ -77,7 +77,7 @@ py_test(
     deps = [
         "//beancount/core:number",
         "//beancount/prices/sources:yahoo",
-        "//beancount/utils:date_utils",
+        "//beanprice:date_utils",
     ],
 )
 

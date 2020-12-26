@@ -9,8 +9,7 @@ from decimal import Decimal
 from dateutil import tz
 import requests
 
-from beancount.utils import date_utils
-
+from beanprice import date_utils
 from beanprice import source
 from beanprice.sources import quandl
 
