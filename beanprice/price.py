@@ -413,6 +413,13 @@ def get_price_jobs_up_to_date(entries,
                                          latest_price_date + datetime.timedelta(days=1),
                                          date_last)
 
+    # Remove currency pairs we can't fetch any prices for.
+    if not default_source:
+        keys = list(lifetimes_map.keys())
+        for key in keys:
+            if not currency_map.get(key, None):
+                del lifetimes_map[key]
+
     # Create price jobs based on fetch rate
     if update_rate == 'daily':
         required_prices = lifetimes.required_daily_prices(
