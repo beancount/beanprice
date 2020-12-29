@@ -384,15 +384,15 @@ def get_price_jobs_up_to_date(entries,
 
     if inactive:
         for base_quote in currencies:
-            if lifetimes_map[base_quote] is None:
+            if lifetimes_map[base_quote]:
+                # Use first date from lifetime
+                lifetimes_map[base_quote] = [(lifetimes_map[base_quote][0][0], None)]
+            else:
                 # Insert never active commodities into lifetimes
                 # Start from date of currency directive
                 base, _ = base_quote
                 commodity_entry = commodity_map.get(base, None)
                 lifetimes_map[base_quote] = [(commodity_entry.date, None)]
-            else:
-                # Use first date from lifetime
-                lifetimes_map[base_quote] = [(lifetimes_map[base_quote][0][0], None)]
     else:
         #Compress any lifetimes based on compress_days
         lifetimes_map = lifetimes.compress_lifetimes_days(lifetimes_map, compress_days)
