@@ -384,15 +384,15 @@ def get_price_jobs_up_to_date(entries,
 
     if inactive:
         for base_quote in currencies:
-            if lifetimes_map[base_quote] is None:
+            if lifetimes_map[base_quote]:
+                # Use first date from lifetime
+                lifetimes_map[base_quote] = [(lifetimes_map[base_quote][0][0], None)]
+            else:
                 # Insert never active commodities into lifetimes
                 # Start from date of currency directive
                 base, _ = base_quote
                 commodity_entry = commodity_map.get(base, None)
                 lifetimes_map[base_quote] = [(commodity_entry.date, None)]
-            else:
-                # Use first date from lifetime
-                lifetimes_map[base_quote] = [(lifetimes_map[base_quote][0][0], None)]
     else:
         #Compress any lifetimes based on compress_days
         lifetimes_map = lifetimes.compress_lifetimes_days(lifetimes_map, compress_days)
@@ -408,10 +408,22 @@ def get_price_jobs_up_to_date(entries,
                                          date_last)
         else:
             latest_price_date = result[0]
-            lifetimes_map[base_quote] = \
-                lifetimes.trim_intervals(intervals,
-                                         latest_price_date + datetime.timedelta(days=1),
-                                         date_last)
+            date_first = latest_price_date + datetime.timedelta(days=1)
+            if date_first < date_last:
+                lifetimes_map[base_quote] = \
+                    lifetimes.trim_intervals(intervals,
+                                            date_first,
+                                            date_last)
+            else:
+                # We don't need to update if we're already up to date.
+                lifetimes_map[base_quote] = []
+
+    # Remove currency pairs we can't fetch any prices for.
+    if not default_source:
+        keys = list(lifetimes_map.keys())
+        for key in keys:
+            if not currency_map.get(key, None):
+                del lifetimes_map[key]
 
     # Create price jobs based on fetch rate
     if update_rate == 'daily':
