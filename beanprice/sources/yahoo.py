@@ -25,7 +25,6 @@ import requests
 
 from beanprice import source
 
-
 class YahooError(ValueError):
     "An error from the Yahoo API."
 
@@ -89,6 +88,10 @@ def get_price_series(ticker: str,
     meta = result['meta']
     tzone = timezone(timedelta(hours=meta['gmtoffset'] / 3600),
                      meta['exchangeTimezoneName'])
+
+    if 'timestamp' not in result:
+        raise YahooError("Yahoo returned no data for ticker {} for time range {} - {}".format(
+            ticker, time_begin, time_end))
 
     timestamp_array = result['timestamp']
     close_array = result['indicators']['quote'][0]['close']
