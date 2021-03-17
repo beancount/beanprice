@@ -19,7 +19,7 @@ __license__ = "GNU GPLv2"
 
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
 
@@ -55,7 +55,7 @@ _MARKETS = {
 }
 
 
-def parse_currency(result: Dict[str, Any]) -> str:
+def parse_currency(result: Dict[str, Any]) -> Optional[str]:
     """Infer the currency from the result."""
     if 'market' not in result:
         return None
@@ -77,7 +77,7 @@ def get_price_series(ticker: str,
     if requests is None:
         raise YahooError("You must install the 'requests' library.")
     url = "https://query1.finance.yahoo.com/v8/finance/chart/{}".format(ticker)
-    payload = {
+    payload: Dict[str, Union[int, str]] = {
         'period1': int(time_begin.timestamp()),
         'period2': int(time_end.timestamp()),
         'interval': '1d',
