@@ -5,7 +5,6 @@ __license__ = "GNU GPLv2"
 
 import datetime
 import logging
-import os
 import shutil
 import sys
 import tempfile
@@ -54,50 +53,6 @@ def run_with_args(function, args, runner_file=None):
     finally:
         sys.argv = saved_argv
         logging.root.handlers = saved_handlers
-
-
-class TestSetupCache(unittest.TestCase):
-
-    def test_clear_cache_unset(self):
-        with mock.patch('os.remove') as mock_remove:
-            with tempfile.TemporaryDirectory():
-                price.setup_cache(None, True)
-        self.assertEqual(0, mock_remove.call_count)
-
-    def test_clear_cache_not_present(self):
-        with mock.patch('os.remove') as mock_remove:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                filename = path.join(tmpdir, 'cache.db')
-                price.setup_cache(filename, True)
-                self.assertEqual(0, mock_remove.call_count)
-                self.assertTrue(any(dirfile.startswith('cache.db')
-                                    for dirfile in os.listdir(tmpdir)))
-                price.reset_cache()
-
-    def test_clear_cache_present(self):
-        mock_remove = mock.MagicMock()
-        real_remove = os.remove
-        def remove(*args):
-            mock_remove(*args)
-            real_remove(*args)
-        with mock.patch('os.remove', remove):
-            with tempfile.TemporaryDirectory() as tmpdir:
-                filename = path.join(tmpdir, 'cache.db')
-                with open(filename, 'w'): pass
-                price.setup_cache(filename, True)
-                self.assertEqual(1, mock_remove.call_count)
-                self.assertTrue(any(dirfile.startswith('cache.db')
-                                    for dirfile in os.listdir(tmpdir)))
-                price.reset_cache()
-
-    def test_leave_cache(self):
-        with mock.patch('os.remove') as mock_remove:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                filename = path.join(tmpdir, 'cache.db')
-                with open(filename, 'w'): pass
-                price.setup_cache(None, False)
-                self.assertEqual(0, mock_remove.call_count)
-                self.assertTrue(path.exists(filename))
 
 
 class TestCache(unittest.TestCase):
@@ -155,6 +110,51 @@ class TestCache(unittest.TestCase):
                 self.assertTrue(source.get_latest_price.called)
                 self.assertEqual(1, len(price._CACHE))
                 self.assertEqual(srcprice2, result)
+        finally:
+            price.reset_cache()
+            if path.exists(tmpdir):
+                shutil.rmtree(tmpdir)
+
+    def test_fetch_cached_price__clear_cache(self):
+        tmpdir = tempfile.mkdtemp()
+        tmpfile = path.join(tmpdir, 'prices.cache')
+        try:
+            price.setup_cache(tmpfile, False)
+
+            srcprice = SourcePrice(Decimal('1.723'), datetime.datetime.now(tz.tzutc()),
+                                   'USD')
+            source = mock.MagicMock()
+            source.get_latest_price.return_value = srcprice
+            source.__file__ = '<module>'
+
+            # Cache miss.
+            result = price.fetch_cached_price(source, 'HOOL', None)
+            self.assertTrue(source.get_latest_price.called)
+            self.assertEqual(1, len(price._CACHE))
+            self.assertEqual(srcprice, result)
+
+            source.get_latest_price.reset_mock()
+
+            # Cache hit.
+            result = price.fetch_cached_price(source, 'HOOL', None)
+            self.assertFalse(source.get_latest_price.called)
+            self.assertEqual(1, len(price._CACHE))
+            self.assertEqual(srcprice, result)
+
+            srcprice2 = SourcePrice(
+                Decimal('1.894'), datetime.datetime.now(tz.tzutc()), 'USD')
+            source.get_latest_price.reset_mock()
+            source.get_latest_price.return_value = srcprice2
+
+            # Open cache again, but clear it.
+            price.reset_cache()
+            price.setup_cache(tmpfile, True)
+
+            # Cache cleared.
+            result = price.fetch_cached_price(source, 'HOOL', None)
+            self.assertTrue(source.get_latest_price.called)
+            self.assertEqual(1, len(price._CACHE))
+            self.assertEqual(srcprice2, result)
         finally:
             price.reset_cache()
             if path.exists(tmpdir):
