@@ -183,7 +183,8 @@ class YahooFinancePriceFetcher(unittest.TestCase):
                                    "symbol": "XSP.TO",
                                    "timezone": "EDT",
                                    "validRanges": ["1d", "5d", "1mo", "3mo", "6mo", "1y",
-                                                   "2y", "5y", "10y", "ytd", "max"]}}]}}"""))
+                                                   "2y", "5y", "10y", "ytd", "max"]}}]}}
+        """))
         with self.assertRaises(yahoo.YahooError):
             with mock.patch('requests.get', return_value=response):
                 srcprice = yahoo.Source().get_historical_price(
