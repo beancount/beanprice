@@ -39,10 +39,10 @@ import beanprice
 #   module: A Python module, the module to be called to create a price source.
 #   symbol: A ticker symbol in the universe of the source.
 #   invert: A boolean, true if we need to invert the currency.
-PriceSource = NamedTuple('PriceSource',
-                         [('module', Any),
-                          ('symbol', str),
-                          ('invert', bool)])
+class PriceSource(NamedTuple):
+    module: Any
+    symbol: str
+    invert: bool
 
 
 # A dated price source description.
@@ -56,11 +56,11 @@ PriceSource = NamedTuple('PriceSource',
 #   date: A datetime.date object for the date to be fetched, or None
 #     with the meaning of fetching the latest price.
 #   sources: A list of PriceSource instances describing where to fetch prices from.
-DatedPrice = NamedTuple('DatedPrice',
-                        [('base', Optional[str]),
-                         ('quote', Optional[str]),
-                         ('date', Optional[datetime.date]),
-                         ('sources', List[PriceSource])])
+class DatedPrice(NamedTuple):
+    base: Optional[str]
+    quote: Optional[str]
+    date: Optional[datetime.date]
+    sources: List[PriceSource]
 
 
 # The Python package where the default sources are found.
@@ -172,7 +172,7 @@ def parse_single_source(source: str) -> PriceSource:
     return PriceSource(module, symbol, bool(invert))
 
 
-def import_source(module_name: str) -> Any:
+def import_source(module_name: str):
     """Import the source module defined by the given name.
 
     The default location is handled here.
@@ -199,8 +199,8 @@ def import_source(module_name: str) -> Any:
 
 
 def find_currencies_declared(
-        entries: List[data.Directive],
-        date: datetime.date=None) -> List[Tuple[Any, str, List[PriceSource]]]:
+        entries: data.Entries,
+        date: datetime.date = None) -> List[Tuple[str, str, List[PriceSource]]]:
     """Return currencies declared in Commodity directives.
 
     If a 'price' metadata field is provided, include all the quote currencies
@@ -262,10 +262,10 @@ def log_currency_list(message, currencies):
         logging.debug("  {:>32}".format('{} /{}'.format(base, quote)))
 
 
-def get_price_jobs_at_date(entries: List[data.Directive],
-                           date: Optional[datetime.date]=None,
-                           inactive: bool=False,
-                           undeclared_source: Optional[str]=None):
+def get_price_jobs_at_date(entries: data.Entries,
+                           date: Optional[datetime.date] = None,
+                           inactive: bool = False,
+                           undeclared_source: Optional[str] = None):
     """Get a list of prices to fetch from a stream of entries.
 
     The active holdings held on the given date are included.
@@ -573,7 +573,7 @@ def reset_cache():
     _CACHE = None
 
 
-def fetch_price(dprice: DatedPrice, swap_inverted: bool=False) -> Optional[data.Price]:
+def fetch_price(dprice: DatedPrice, swap_inverted: bool = False) -> Optional[data.Price]:
     """Fetch a price for the DatedPrice job.
 
     Args:
@@ -630,7 +630,7 @@ def fetch_price(dprice: DatedPrice, swap_inverted: bool=False) -> Optional[data.
 def filter_redundant_prices(
         price_entries: List[data.Price],
         existing_entries: List[data.Price],
-        diffs: bool=False) -> Tuple[List[data.Price], List[data.Price]]:
+        diffs: bool = False) -> Tuple[List[data.Price], List[data.Price]]:
     """Filter out new entries that are redundant from an existing set.
 
     If the price differs, we override it with the new entry only on demand. This
@@ -770,7 +770,7 @@ def process_args() -> Tuple[Any, List[DatedPrice], List[data.Price], Any]:
     setup_cache(args.cache_filename, args.clear_cache)
 
     # Get the list of DatedPrice jobs to get from the arguments.
-    dates: List[Optional[datetime.date]] = [args.date or None]
+    dates = [args.date or None]
     logging.info("Processing at date: %s", args.date or datetime.date.today())
 
     jobs = []
