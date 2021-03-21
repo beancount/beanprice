@@ -1,0 +1,3 @@
+from beancount.ingest.importers.mixins import filing as filing, identifier as identifier
+
+class Importer(filing.FilingMixin, identifier.IdentifyMixin): ...

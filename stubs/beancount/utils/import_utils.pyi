@@ -1,0 +1,3 @@
+from typing import Any
+
+def import_symbol(dotted_name: Any): ...

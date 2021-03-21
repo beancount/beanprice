@@ -1,0 +1,6 @@
+import unittest
+from beancount.parser import hashsrc as hashsrc
+
+class TestHashSource(unittest.TestCase):
+    def test_hash_parser_source_files(self) -> None: ...
+    def test_check_parser_source_files(self) -> None: ...
