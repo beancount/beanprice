@@ -1,8 +1,13 @@
 from beancount.core.display_context import DEFAULT_FORMATTER as DEFAULT_FORMATTER
-from beancount.core.number import D as D, ZERO as ZERO
-from typing import Any
+from beancount.core.number import D as D, ZERO as ZERO, Decimal
+from typing import Any, NamedTuple, Optional
+
 
 CURRENCY_RE: str
+
+class _Amount(NamedTuple):
+    number: Optional[Decimal]
+    currency: str
 
 class Amount(_Amount):
     valid_types_number: Any = ...
@@ -27,4 +32,4 @@ def abs(amount: Any): ...
 A: Any
 
 from_string: Any
-NULL_AMOUNT: Any
+NULL_AMOUNT: Amount

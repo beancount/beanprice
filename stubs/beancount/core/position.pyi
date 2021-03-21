@@ -1,7 +1,7 @@
 from beancount.core.amount import Amount as Amount, CURRENCY_RE as CURRENCY_RE
 from beancount.core.display_context import DEFAULT_FORMATTER as DEFAULT_FORMATTER
 from beancount.core.number import D as D, NUMBER_RE as NUMBER_RE, ZERO as ZERO
-from typing import Any, Optional
+from typing import Any, Optional, NamedTuple
 
 Cost: Any
 CostSpec: Any
@@ -13,6 +13,10 @@ NCURRENCIES: Any
 
 def get_position(posting: Any): ...
 def to_string(pos: Any, dformat: Any = ..., detail: bool = ...): ...
+
+class _Position(NamedTuple):
+    units: Amount
+    cost: Cost
 
 class Position(_Position):
     cost_types: Any = ...

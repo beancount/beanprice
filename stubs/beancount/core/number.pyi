@@ -1,5 +1,7 @@
+import decimal
 from typing import Any, Optional
 
+Decimal = decimal.Decimal
 ZERO: Any
 HALF: Any
 ONE: Any
