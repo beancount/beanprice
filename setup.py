@@ -25,7 +25,7 @@ setup(name="beanprice",
 
       install_requires=[
           # Beancount library itself.
-          'beancount',
+          'beancount>=2.3.4',
 
           # Testing support now uses the pytest module.
           'pytest',
