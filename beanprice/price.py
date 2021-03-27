@@ -716,6 +716,9 @@ def process_args():
         "results in 1.25, by default we would output \"price CAD  0.8000 USD\". "
         "Using this option we would instead output \" price USD   1.2500 CAD\"."))
 
+    parser.add_argument('-w', '--workers', action='store', type=int, default=1, help=(
+        "Specify the number of concurrent fetchers."))
+
     parser.add_argument('-n', '--dry-run', action='store_true', help=(
         "Don't actually fetch the prices, just print the list of the ones to be fetched."))
 
@@ -827,7 +830,7 @@ def main():
         return
 
     # Fetch all the required prices, processing all the jobs.
-    executor = futures.ThreadPoolExecutor(max_workers=3)
+    executor = futures.ThreadPoolExecutor(max_workers=args.workers)
     price_entries = filter(None, executor.map(
         functools.partial(fetch_price, swap_inverted=args.swap_inverted), jobs))
 
