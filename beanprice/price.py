@@ -3,6 +3,7 @@
 __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
+import argparse
 import collections
 import datetime
 import functools
@@ -27,7 +28,6 @@ from beancount.core import getters
 from beancount.ops import lifetimes
 from beancount.parser import printer
 from beancount.ops import find_prices
-from beancount.parser import version
 
 from beanprice import date_utils
 import beanprice
@@ -664,7 +664,7 @@ def process_args():
         jobs: A list of DatedPrice job objects.
         entries: A list of all the parsed entries.
     """
-    parser = version.ArgumentParser(description=beanprice.__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=beanprice.__doc__.splitlines()[0])
 
     # Input sources or filenames.
     parser.add_argument('sources', nargs='+', help=(
