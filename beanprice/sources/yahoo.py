@@ -44,6 +44,8 @@ def parse_response(response: requests.models.Response) -> Dict:
             ','.join(json.keys())))
     if content['error'] is not None:
         raise YahooError("Error fetching Yahoo data: {}".format(content['error']))
+    if not content['result']:
+        raise YahooError("No data returned from Yahoo, ensure that the symbol is correct")
     return content['result'][0]
 
 

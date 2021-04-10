@@ -154,6 +154,12 @@ class YahooFinancePriceFetcher(unittest.TestCase):
         with self.assertRaises(yahoo.YahooError):
             yahoo.parse_response(response)
 
+    def test_parse_response_empty_result(self):
+        response = MockResponse(
+            '{"quoteResponse": {"error": null, "result": []}}')
+        with self.assertRaises(yahoo.YahooError):
+            yahoo.parse_response(response)
+
     def test_parse_response_no_timestamp(self):
         response = MockResponse(textwrap.dedent("""
             {"chart":
