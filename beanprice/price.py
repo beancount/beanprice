@@ -16,6 +16,7 @@ import re
 import sys
 import logging
 from concurrent import futures
+from typing import Any, Dict, List, Optional, NamedTuple, Tuple
 
 from dateutil import tz
 
@@ -33,6 +34,17 @@ from beanprice import date_utils
 import beanprice
 
 
+# A price source.
+#
+#   module: A Python module, the module to be called to create a price source.
+#   symbol: A ticker symbol in the universe of the source.
+#   invert: A boolean, true if we need to invert the currency.
+class PriceSource(NamedTuple):
+    module: Any
+    symbol: str
+    invert: bool
+
+
 # A dated price source description.
 #
 # Attributes:
@@ -44,15 +56,11 @@ import beanprice
 #   date: A datetime.date object for the date to be fetched, or None
 #     with the meaning of fetching the latest price.
 #   sources: A list of PriceSource instances describing where to fetch prices from.
-DatedPrice = collections.namedtuple('DatedPrice', 'base quote date sources')
-
-
-# A price source.
-#
-#   module: A Python module, the module to be called to create a price source.
-#   symbol: A ticker symbol in the universe of the source.
-#   invert: A boolean, true if we need to invert the currency.
-PriceSource = collections.namedtuple('PriceSource', 'module symbol invert')
+class DatedPrice(NamedTuple):
+    base: Optional[str]
+    quote: Optional[str]
+    date: Optional[datetime.date]
+    sources: List[PriceSource]
 
 
 # The Python package where the default sources are found.
@@ -74,7 +82,7 @@ DEFAULT_EXPIRATION = datetime.timedelta(seconds=30*60)  # 30 mins.
 DEFAULT_SOURCE = 'beanprice.sources.yahoo'
 
 
-def format_dated_price_str(dprice):
+def format_dated_price_str(dprice: DatedPrice) -> str:
     """Convert a dated price to a one-line printable string.
 
     Args:
@@ -93,7 +101,7 @@ def format_dated_price_str(dprice):
         ','.join(psstrs))
 
 
-def parse_source_map(source_map_spec):
+def parse_source_map(source_map_spec: str) -> Dict[str, List[PriceSource]]:
     """Parse a source map specification string.
 
     Source map specifications allow the specification of multiple sources for
@@ -125,7 +133,7 @@ def parse_source_map(source_map_spec):
     Raises:
       ValueError: If an invalid pattern has been specified.
     """
-    source_map = collections.defaultdict(list)
+    source_map: Dict[str, List[PriceSource]] = collections.defaultdict(list)
     for source_list_spec in re.split('[ ;]', source_map_spec):
         match = re.match('({}):(.*)$'.format(amount.CURRENCY_RE),
                          source_list_spec)
@@ -139,7 +147,7 @@ def parse_source_map(source_map_spec):
     return source_map
 
 
-def parse_single_source(source):
+def parse_single_source(source: str) -> PriceSource:
     """Parse a single source string.
 
     Source specifications follow the syntax:
@@ -152,7 +160,7 @@ def parse_single_source(source):
     Args:
       source: A single source string specification.
     Returns:
-      A PriceSource tuple, or
+      A PriceSource tuple.
     Raises:
       ValueError: If invalid.
     """
@@ -164,7 +172,7 @@ def parse_single_source(source):
     return PriceSource(module, symbol, bool(invert))
 
 
-def import_source(module_name):
+def import_source(module_name: str):
     """Import the source module defined by the given name.
 
     The default location is handled here.
@@ -190,7 +198,9 @@ def import_source(module_name):
                 module_name)) from exc
 
 
-def find_currencies_declared(entries, date=None):
+def find_currencies_declared(
+        entries: data.Entries,
+        date: datetime.date = None) -> List[Tuple[str, str, List[PriceSource]]]:
     """Return currencies declared in Commodity directives.
 
     If a 'price' metadata field is provided, include all the quote currencies
@@ -252,16 +262,16 @@ def log_currency_list(message, currencies):
         logging.debug("  {:>32}".format('{} /{}'.format(base, quote)))
 
 
-def get_price_jobs_at_date(entries,
-                           date=None,
-                           inactive=False,
-                           undeclared_source=None):
+def get_price_jobs_at_date(entries: data.Entries,
+                           date: Optional[datetime.date] = None,
+                           inactive: bool = False,
+                           undeclared_source: Optional[str] = None):
     """Get a list of prices to fetch from a stream of entries.
 
     The active holdings held on the given date are included.
 
     Args:
-      filename: A string, the name of a file to process.
+      entries: A list of beancount entries, the name of a file to process.
       date: A datetime.date instance.
       inactive: Include currencies with no balance at the given date. The default
         is to only include those currencies which have a non-zero balance.
@@ -563,7 +573,7 @@ def reset_cache():
     _CACHE = None
 
 
-def fetch_price(dprice, swap_inverted=False):
+def fetch_price(dprice: DatedPrice, swap_inverted: bool = False) -> Optional[data.Price]:
     """Fetch a price for the DatedPrice job.
 
     Args:
@@ -617,7 +627,10 @@ def fetch_price(dprice, swap_inverted=False):
                       amount.Amount(price, quote or UNKNOWN_CURRENCY))
 
 
-def filter_redundant_prices(price_entries, existing_entries, diffs=False):
+def filter_redundant_prices(
+        price_entries: List[data.Price],
+        existing_entries: List[data.Price],
+        diffs: bool = False) -> Tuple[List[data.Price], List[data.Price]]:
     """Filter out new entries that are redundant from an existing set.
 
     If the price differs, we override it with the new entry only on demand. This
@@ -638,8 +651,8 @@ def filter_redundant_prices(price_entries, existing_entries, diffs=False):
     existing_prices = {(entry.date, entry.currency): entry
                        for entry in existing_entries
                        if isinstance(entry, data.Price)}
-    filtered_prices = []
-    ignored_prices = []
+    filtered_prices: List[data.Price] = []
+    ignored_prices: List[data.Price] = []
     for entry in price_entries:
         key = (entry.date, entry.currency)
         if key in existing_prices:
@@ -655,7 +668,7 @@ def filter_redundant_prices(price_entries, existing_entries, diffs=False):
     return filtered_prices, ignored_prices
 
 
-def process_args():
+def process_args() -> Tuple[Any, List[DatedPrice], List[data.Price], Any]:
     """Process the arguments. This also initializes the logging module.
 
     Returns:
@@ -663,6 +676,7 @@ def process_args():
         args: The argparse receiver of command-line arguments.
         jobs: A list of DatedPrice job objects.
         entries: A list of all the parsed entries.
+        dcontext: A context used to determine decimal precision when printing.
     """
     parser = argparse.ArgumentParser(description=beanprice.__doc__.splitlines()[0])
 
@@ -765,7 +779,7 @@ def process_args():
     if args.expressions:
         # Interpret the arguments as price sources.
         for source_str in args.sources:
-            psources = []
+            psources: List[PriceSource] = []
             try:
                 psource_map = parse_source_map(source_str)
             except ValueError:
