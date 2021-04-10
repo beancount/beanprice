@@ -51,6 +51,7 @@ def parse_response(response: requests.models.Response) -> Dict:
 _MARKETS = {
     'us_market': 'USD',
     'ca_market': 'CAD',
+    'ch_market': 'CHF',
 }
 
 
