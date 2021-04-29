@@ -152,14 +152,14 @@ class TestOandaGetHistorical(TimezoneTestBase, unittest.TestCase):
 
     def _check_valid(self, query_date, out_time, out_price):
         candles = [
-            (datetime.datetime(2017, 1, 21,  0, 0, 0, tzinfo=UTC), Decimal('1.3100')),
-            (datetime.datetime(2017, 1, 21,  8, 0, 0, tzinfo=UTC), Decimal('1.3300')),
+            (datetime.datetime(2017, 1, 21, 0, 0, 0, tzinfo=UTC), Decimal('1.3100')),
+            (datetime.datetime(2017, 1, 21, 8, 0, 0, tzinfo=UTC), Decimal('1.3300')),
             (datetime.datetime(2017, 1, 21, 16, 0, 0, tzinfo=UTC), Decimal('1.3500')),
-            (datetime.datetime(2017, 1, 22,  0, 0, 0, tzinfo=UTC), Decimal('1.3700')),
-            (datetime.datetime(2017, 1, 22,  8, 0, 0, tzinfo=UTC), Decimal('1.3900')),
+            (datetime.datetime(2017, 1, 22, 0, 0, 0, tzinfo=UTC), Decimal('1.3700')),
+            (datetime.datetime(2017, 1, 22, 8, 0, 0, tzinfo=UTC), Decimal('1.3900')),
             (datetime.datetime(2017, 1, 22, 16, 0, 0, tzinfo=UTC), Decimal('1.4100')),
-            (datetime.datetime(2017, 1, 23,  0, 0, 0, tzinfo=UTC), Decimal('1.4300')),
-            (datetime.datetime(2017, 1, 23,  8, 0, 0, tzinfo=UTC), Decimal('1.4500')),
+            (datetime.datetime(2017, 1, 23, 0, 0, 0, tzinfo=UTC), Decimal('1.4300')),
+            (datetime.datetime(2017, 1, 23, 8, 0, 0, tzinfo=UTC), Decimal('1.4500')),
             (datetime.datetime(2017, 1, 23, 16, 0, 0, tzinfo=UTC), Decimal('1.4700')),
         ]
         with mock.patch.object(oanda, '_fetch_candles', return_value=candles):

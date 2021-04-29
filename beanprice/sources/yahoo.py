@@ -19,12 +19,11 @@ __license__ = "GNU GPLv2"
 
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
 
 from beanprice import source
-
 
 class YahooError(ValueError):
     "An error from the Yahoo API."
@@ -45,6 +44,8 @@ def parse_response(response: requests.models.Response) -> Dict:
             ','.join(json.keys())))
     if content['error'] is not None:
         raise YahooError("Error fetching Yahoo data: {}".format(content['error']))
+    if not content['result']:
+        raise YahooError("No data returned from Yahoo, ensure that the symbol is correct")
     return content['result'][0]
 
 
@@ -52,10 +53,11 @@ def parse_response(response: requests.models.Response) -> Dict:
 _MARKETS = {
     'us_market': 'USD',
     'ca_market': 'CAD',
+    'ch_market': 'CHF',
 }
 
 
-def parse_currency(result: Dict[str, Any]) -> str:
+def parse_currency(result: Dict[str, Any]) -> Optional[str]:
     """Infer the currency from the result."""
     if 'market' not in result:
         return None
@@ -77,7 +79,7 @@ def get_price_series(ticker: str,
     if requests is None:
         raise YahooError("You must install the 'requests' library.")
     url = "https://query1.finance.yahoo.com/v8/finance/chart/{}".format(ticker)
-    payload = {
+    payload: Dict[str, Union[int, str]] = {
         'period1': int(time_begin.timestamp()),
         'period2': int(time_end.timestamp()),
         'interval': '1d',
@@ -89,6 +91,11 @@ def get_price_series(ticker: str,
     meta = result['meta']
     tzone = timezone(timedelta(hours=meta['gmtoffset'] / 3600),
                      meta['exchangeTimezoneName'])
+
+    if 'timestamp' not in result:
+        raise YahooError(
+            "Yahoo returned no data for ticker {} for time range {} - {}".format(
+                ticker, time_begin, time_end))
 
     timestamp_array = result['timestamp']
     close_array = result['indicators']['quote'][0]['close']

@@ -4,11 +4,13 @@ __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import datetime
-import unittest
+import logging
+import os
 import shutil
+import sys
 import tempfile
 import types
-import os
+import unittest
 from os import path
 from unittest import mock
 from decimal import Decimal
@@ -25,6 +27,33 @@ from beanprice.sources import yahoo
 
 
 PS = price.PriceSource
+
+
+def run_with_args(function, args, runner_file=None):
+    """Run the given function with sys.argv set to argv. The first argument is
+    automatically inferred to be where the function object was defined. sys.argv
+    is restored after the function is called.
+    Args:
+      function: A function object to call with no arguments.
+      argv: A list of arguments, excluding the script name, to be temporarily
+        set on sys.argv.
+      runner_file: An optional name of the top-level file being run.
+    Returns:
+      The return value of the function run.
+    """
+    saved_argv = sys.argv
+    saved_handlers = logging.root.handlers
+
+    try:
+        if runner_file is None:
+            module = sys.modules[function.__module__]
+            runner_file = module.__file__
+        sys.argv = [runner_file] + args
+        logging.root.handlers = []
+        return function()
+    finally:
+        sys.argv = saved_argv
+        logging.root.handlers = saved_handlers
 
 
 class TestSetupCache(unittest.TestCase):
@@ -168,7 +197,7 @@ class TestProcessArguments(unittest.TestCase):
     def test_filename_not_exists(self):
         with test_utils.capture('stderr'):
             with self.assertRaises(SystemExit):
-                test_utils.run_with_args(
+                run_with_args(
                     price.process_args, ['--no-cache', '/some/file.beancount'])
 
     @test_utils.docfile
@@ -178,20 +207,20 @@ class TestProcessArguments(unittest.TestCase):
         2015-01-01 open USD ;; Error
         """
         with test_utils.capture('stderr'):
-            args, jobs, _, __ = test_utils.run_with_args(
+            args, jobs, _, __ = run_with_args(
                 price.process_args, ['--no-cache', filename])
             self.assertEqual([], jobs)
 
     def test_filename_exists(self):
         with tempfile.NamedTemporaryFile('w') as tmpfile:
             with test_utils.capture('stderr'):
-                args, jobs, _, __ = test_utils.run_with_args(
+                args, jobs, _, __ = run_with_args(
                     price.process_args, ['--no-cache', tmpfile.name])
                 self.assertEqual([], jobs)  # Empty file.
 
     def test_expressions(self):
         with test_utils.capture('stderr'):
-            args, jobs, _, __ = test_utils.run_with_args(
+            args, jobs, _, __ = run_with_args(
                 price.process_args, ['--no-cache', '-e', 'USD:yahoo/AAPL'])
             self.assertEqual(
                 [price.DatedPrice(

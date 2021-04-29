@@ -1,0 +1,21 @@
+name: beancount-v3
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - run: pip install git+https://github.com/beancount/beancount.git
+      - run: pip install -r requirements_dev.txt
+      - run: pytest beanprice

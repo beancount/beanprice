@@ -154,6 +154,48 @@ class YahooFinancePriceFetcher(unittest.TestCase):
         with self.assertRaises(yahoo.YahooError):
             yahoo.parse_response(response)
 
+    def test_parse_response_empty_result(self):
+        response = MockResponse(
+            '{"quoteResponse": {"error": null, "result": []}}')
+        with self.assertRaises(yahoo.YahooError):
+            yahoo.parse_response(response)
+
+    def test_parse_response_no_timestamp(self):
+        response = MockResponse(textwrap.dedent("""
+            {"chart":
+             {"error": null,
+              "result": [{"indicators": {"adjclose": [{}],
+                                         "quote": [{}]},
+                          "meta": {"chartPreviousClose": 29.25,
+                                   "currency": "CAD",
+                                   "currentTradingPeriod": {"post": {"end": 1522702800,
+                                                                     "gmtoffset": -14400,
+                                                                     "start": 1522699200,
+                                                                     "timezone": "EDT"},
+                                                            "pre": {"end": 1522675800,
+                                                                    "gmtoffset": -14400,
+                                                                    "start": 1522670400,
+                                                                    "timezone": "EDT"},
+                                                            "regular": {"end": 1522699200,
+                                                                        "gmtoffset": -14400,
+                                                                        "start": 1522675800,
+                                                                        "timezone": "EDT"}},
+                                   "dataGranularity": "1d",
+                                   "exchangeName": "TOR",
+                                   "exchangeTimezoneName": "America/Toronto",
+                                   "firstTradeDate": 1018872000,
+                                   "gmtoffset": -14400,
+                                   "instrumentType": "ETF",
+                                   "symbol": "XSP.TO",
+                                   "timezone": "EDT",
+                                   "validRanges": ["1d", "5d", "1mo", "3mo", "6mo", "1y",
+                                                   "2y", "5y", "10y", "ytd", "max"]}}]}}
+        """))
+        with self.assertRaises(yahoo.YahooError):
+            with mock.patch('requests.get', return_value=response):
+                srcprice = yahoo.Source().get_historical_price(
+                    'XSP.TO', datetime.datetime(2017, 11, 1, 16, 0, 0, tzinfo=tz.tzutc()))
+
 
 if __name__ == '__main__':
     unittest.main()
