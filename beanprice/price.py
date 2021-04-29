@@ -394,24 +394,19 @@ def get_price_jobs_up_to_date(entries,
                 # Use first date from lifetime
                 lifetimes_map[base_quote] = [(lifetimes_map[base_quote][0][0], None)]
     else:
-        #Compress any lifetimes based on compress_days
+        # Compress any lifetimes based on compress_days
         lifetimes_map = lifetimes.compress_lifetimes_days(lifetimes_map, compress_days)
 
-    #Trim lifetimes based on latest price dates.
+    # Trim lifetimes based on latest price dates.
     for base_quote in lifetimes_map:
         intervals = lifetimes_map[base_quote]
         result = prices.get_latest_price(price_map, base_quote)
         if (result is None or result[0] is None):
-            lifetimes_map[base_quote] = \
-                lifetimes.trim_intervals(intervals,
-                                         None,
-                                         date_last)
+            lifetimes_map[base_quote] = lifetimes.trim_intervals(intervals, None, date_last)
         else:
             latest_price_date = result[0]
-            lifetimes_map[base_quote] = \
-                lifetimes.trim_intervals(intervals,
-                                         latest_price_date + datetime.timedelta(days=1),
-                                         date_last)
+            lifetimes_map[base_quote] = lifetimes.trim_intervals(
+                intervals, latest_price_date + datetime.timedelta(days=1), date_last)
 
     # Create price jobs based on fetch rate
     if update_rate == 'daily':
