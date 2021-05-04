@@ -1,0 +1,3 @@
+from typing import Any
+
+def gviz_timeline(time_array: Any, data_array_map: Any, css_id: str = ...): ...

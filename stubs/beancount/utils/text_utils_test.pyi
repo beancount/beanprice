@@ -1,0 +1,6 @@
+import unittest
+from beancount.utils import text_utils as text_utils
+
+class TestTextUtils(unittest.TestCase):
+    def test_replace_numbers(self) -> None: ...
+    def test_fix_ampersand(self) -> None: ...

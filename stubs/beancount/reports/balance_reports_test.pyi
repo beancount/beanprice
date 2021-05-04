@@ -1,0 +1,6 @@
+import unittest
+from beancount.parser import options as options
+from beancount.reports import balance_reports as balance_reports, base_test as base_test
+
+class TestBalanceReports(unittest.TestCase):
+    def test_all_reports_empty(self) -> None: ...

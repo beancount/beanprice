@@ -1,0 +1,6 @@
+import unittest
+from beancount.utils import memo as memo
+
+class TestMemoization(unittest.TestCase):
+    def test_memoization_success(self) -> None: ...
+    def test_memoization_expired(self) -> None: ...

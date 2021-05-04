@@ -1,0 +1,9 @@
+from beancount.core import account_types as account_types, convert as convert, data as data, inventory as inventory, realization as realization
+from beancount.core.number import ZERO as ZERO
+from typing import Any, Optional
+
+TOTALS_LINE: Any
+
+def is_account_active(real_account: Any): ...
+def tree_table(oss: Any, real_account: Any, formatter: Any, header: Optional[Any] = ..., classes: Optional[Any] = ...): ...
+def table_of_balances(real_root: Any, price_map: Any, price_date: Any, operating_currencies: Any, formatter: Any, classes: Optional[Any] = ...): ...

@@ -1,0 +1,6 @@
+from beancount.core import data as data
+from beancount.core.amount import Amount as Amount
+from typing import Any
+
+def compress(entries: Any, predicate: Any): ...
+def merge(entries: Any, prototype_txn: Any): ...

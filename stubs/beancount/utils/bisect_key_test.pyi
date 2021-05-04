@@ -1,0 +1,6 @@
+import unittest
+from beancount.utils import bisect_key as bisect_key
+
+class TestBisectWithKey(unittest.TestCase):
+    def test_bisect_left_with_key(self): ...
+    def test_bisect_repeats(self): ...

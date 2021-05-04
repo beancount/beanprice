@@ -1,0 +1,3 @@
+from typing import Any
+
+def retrying_urlopen(url: Any, timeout: int = ..., max_retry: int = ...): ...

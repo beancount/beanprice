@@ -1,0 +1,9 @@
+from beancount import loader as loader
+from beancount.parser import cmptest as cmptest
+from beancount.plugins import fill_account as fill_account
+from typing import Any
+
+class TestFillAccountOpen(cmptest.TestCase):
+    def test_fill_account_invalid_account(self, entries: Any, errors: Any, _: Any) -> None: ...
+    def test_fill_account(self, entries: Any, _: Any, options_map: Any) -> None: ...
+    def test_fill_account_with_cost(self, entries: Any, _: Any, options_map: Any) -> None: ...

@@ -1,0 +1,6 @@
+from beancount.core import compare as compare, convert as convert, data as data, getters as getters, interpolate as interpolate, inventory as inventory
+from beancount.parser import parser as parser, printer as printer
+from typing import Any, Optional
+
+def render_file_context(entries: Any, options_map: Any, filename: Any, lineno: Any): ...
+def render_entry_context(entries: Any, options_map: Any, entry: Any, parsed_entry: Optional[Any] = ...): ...
