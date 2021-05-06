@@ -526,6 +526,72 @@ class TestFilters(unittest.TestCase):
         self.assertEqual(1, len(jobs[0].sources))
         self.assertIsInstance(jobs[0].sources[0], price.PriceSource)
 
+    @loader.load_doc()
+    def test_get_price_jobs__currencies_not_at_cost(self, entries, _, __):
+        """
+        2000-01-10 open Assets:US:BofA:Checking
+        2000-01-10 open Assets:US:BofA:CHF
+
+        2014-01-01 commodity USD
+        2014-01-01 commodity CHF
+          price: "USD:yahoo/CHFUSD=X"
+
+        2021-01-04 *
+          Assets:US:BofA:Checking        100 USD
+          Assets:US:BofA:CHF             -110 CHF @@ 100 USD
+        """
+        # TODO: Shouldn't we actually return (CHF, USD) here?
+        jobs = price.get_price_jobs_at_date(entries, datetime.date(2021, 1, 4),
+                                            False, None)
+        self.assertEqual(set(), {(job.base, job.quote) for job in jobs})
+
+        jobs = price.get_price_jobs_at_date(entries, datetime.date(2021, 1, 6),
+                                            False, None)
+        self.assertEqual({('CHF', 'USD')}, {(job.base, job.quote) for job in jobs})
+
+        # TODO: Shouldn't we return (CHF, USD) here, as above?
+        jobs = price.get_price_jobs_up_to_date(entries, datetime.date(2021, 1, 6),
+                                               False, None)
+        self.assertEqual(set(), {(job.base, job.quote) for job in jobs})
+
+    @loader.load_doc()
+    def test_get_price_jobs_up_to_date(self, entries, _, __):
+        """
+        2000-01-10 open Assets:US:Invest:QQQ
+        2000-01-10 open Assets:US:Invest:VEA
+        2000-01-10 open Assets:US:Invest:Margin
+
+        2021-01-01 commodity QQQ
+          price: "USD:yahoo/NASDAQ:QQQ"
+
+        2021-01-01 commodity VEA
+          price: "USD:yahoo/NASDAQ:VEA"
+
+        2021-01-04 *
+          Assets:US:Invest:QQQ             100 QQQ {86.23 USD}
+          Assets:US:Invest:VEA             200 VEA {43.22 USD}
+          Assets:US:Invest:Margin
+
+        2021-01-05 *
+          Assets:US:Invest:QQQ            -100 QQQ {86.23 USD} @ 91.23 USD
+          Assets:US:Invest:Margin
+
+        2021-01-07 *
+          Assets:US:Invest:QQQ              10 QQQ {92.32 USD}
+          Assets:US:Invest:VEA            -200 VEA {43.22 USD} @ 41.01 USD
+          Assets:US:Invest:Margin
+        """
+        jobs = price.get_price_jobs_up_to_date(entries, datetime.date(2021, 1, 8))
+        self.assertEqual({
+                ('QQQ', 'USD', datetime.date(2021, 1, 4)),
+                ('QQQ', 'USD', datetime.date(2021, 1, 5)),
+                ('QQQ', 'USD', datetime.date(2021, 1, 7)),
+                ('VEA', 'USD', datetime.date(2021, 1, 4)),
+                ('VEA', 'USD', datetime.date(2021, 1, 5)),
+                ('VEA', 'USD', datetime.date(2021, 1, 6)),
+                ('VEA', 'USD', datetime.date(2021, 1, 7)),
+            }, {(job.base, job.quote, job.date) for job in jobs})
+
 
 class TestFromFile(unittest.TestCase):
 
