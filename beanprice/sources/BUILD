@@ -98,3 +98,21 @@ py_test(
         "//beancount/prices/sources:tsp",
     ],
 )
+
+py_library(
+    name = "coincap",
+    srcs = ["coincap.py"],
+    deps = [
+        "//beancount/core:number",
+        "//beancount/prices:source",
+    ],
+)
+
+py_test(
+    name = "coincap_test",
+    srcs = ["coincap_test.py"],
+    deps = [
+        "//beancount/core:number",
+        "//beancount/prices/sources:tsp",
+    ],
+)
