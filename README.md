@@ -50,6 +50,21 @@ bean-price --update ledger.beancount
 
 For more detailed guide for price fetching, read <https://beancount.github.io/docs/fetching_prices_in_beancount.html>.
 
+
+## Price source info
+The following price sources are available:
+
+| Name   | Module               | Provides prices for                                                          | Base currency                                            | Latest price? | Historical price? |
+|--------|----------------------|------------------------------------------------------------------------------|----------------------------------------------------------|---------------|-------------------|
+|Coinbase| `beanprice.coinbase` | [Most common (crypto)currencies](https://api.coinbase.com/v2/exchange-rates) | [Many currencies](https://api.coinbase.com/v2/currencies)| ✓             | ✓                |
+|IEX     | `beanprice.iex`      | [Trading symbols](https://iextrading.com/trading/eligible-symbols/)          | USD                                                      | ✓             | 🚧 (Not yet!)    |
+|OANDA   | `beanprice.oanda`    | [Many currencies](https://developer.oanda.com/exchange-rates-api/v1/currencies/) | [Many currencies](https://developer.oanda.com/exchange-rates-api/v1/currencies/) | ✓ | ✓ |
+|Quandl  | `beanprice.quandl`   | [Various datasets](https://www.quandl.com/search)                            | [Various datasets](https://www.quandl.com/search)        | ✓             | ✓                |
+|Rates API| `beanprice.ratesapi`| [Many currencies](https://api.exchangerate.host/symbols)                     | [Many currencies](https://api.exchangerate.host/symbols) | ✓             | ✓                |
+|Thrift Savings Plan| `beanprice.tsp` | TSP Funds | USD                                                                                                                   | ✓             | ✓                |
+|Yahoo   | `beanprice.yahoo`    | Many currencies                                                              | Many currencies                                          | ✓             | ✓                |
+
+
 ## Testing
 
 Run tests:
