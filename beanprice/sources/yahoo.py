@@ -85,7 +85,7 @@ def get_price_series(ticker: str,
         'interval': '1d',
     }
     payload.update(_DEFAULT_PARAMS)
-    response = requests.get(url, params=payload)
+    response = requests.get(url, params=payload, headers={'User-Agent': None})
     result = parse_response(response)
 
     meta = result['meta']
@@ -120,7 +120,7 @@ class Source(source.Source):
             'exchange': 'NYSE',
         }
         payload.update(_DEFAULT_PARAMS)
-        response = requests.get(url, params=payload)
+        response = requests.get(url, params=payload, headers={'User-Agent': None})
         result = parse_response(response)
         try:
             price = Decimal(result['regularMarketPrice'])
