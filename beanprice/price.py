@@ -11,7 +11,6 @@ from os import path
 import shelve
 import tempfile
 import hashlib
-import os
 import re
 import sys
 import logging
@@ -542,24 +541,28 @@ def fetch_cached_price(source, symbol, date):
     return result
 
 
-def setup_cache(cache_filename, clear_cache):
+def setup_cache(cache_filename: Optional[str], clear_cache: bool):
     """Setup the results cache.
 
     Args:
-      cache_filename: A string or None, the filename for the cache.
+      cache_filename: A string or None, the base filename for the cache. An extension
+        may be added to the filename and more than one file may be created.
       clear_cache: A boolean, if true, delete the cache before beginning.
     """
-    if clear_cache and cache_filename and path.exists(cache_filename):
-        logging.info("Clearing cache %s", cache_filename)
-        os.remove(cache_filename)
+    if not cache_filename:
+        return
 
-    if cache_filename:
-        logging.info('Using price cache at "%s" (with indefinite expiration)',
-                     cache_filename)
+    logging.info('Using price cache at "%s" (with indefinite expiration)',
+                 cache_filename)
 
-        global _CACHE
-        _CACHE = shelve.open(cache_filename, 'c')
-        _CACHE.expiration = DEFAULT_EXPIRATION
+    flag = 'c'
+    if clear_cache and cache_filename:
+        logging.info("Clearing cache %s*", cache_filename)
+        flag = 'n'
+
+    global _CACHE
+    _CACHE = shelve.open(cache_filename, flag=flag)
+    _CACHE.expiration = DEFAULT_EXPIRATION # type: ignore
 
 
 def reset_cache():
@@ -739,13 +742,14 @@ def process_args() -> Tuple[Any, List[DatedPrice], List[data.Price], Any]:
                                "{}.cache".format(path.basename(sys.argv[0])))
     cache_group.add_argument('--cache', dest='cache_filename',
                              action='store', default=cache_filename,
-                             help="Enable the cache and with the given cache name.")
+                             help="The base filename for the underlying price cache "
+                             "database. An extension may be added to the filename and "
+                             "more than one file may be created.")
     cache_group.add_argument('--no-cache', dest='cache_filename',
                              action='store_const', const=None,
                              help="Disable the price cache.")
-
     cache_group.add_argument('--clear-cache', action='store_true',
-                             help="Clear the cache prior to startup")
+                             help="Clear the cache prior to startup.")
 
     args = parser.parse_args()
 
