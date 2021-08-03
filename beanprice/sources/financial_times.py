@@ -11,10 +11,14 @@ Valid symbol sets include FTStandard, Bridge, Street & ISIN symbols.
 import datetime
 import math
 from decimal import Decimal
-from typing import List, Optional, Tuple, Dict
-import requests
-from beanprice import source
+from typing import List, Optional
 from os import environ
+import requests
+from dateutil.parser import parse
+
+from beanprice import source
+
+BASE_URL = 'https://markets.ft.com/research/webservices/securities/v1/'
 
 class FinancialTimesError(ValueError):
     "An error from the Financial Times API."
@@ -22,39 +26,46 @@ class FinancialTimesError(ValueError):
 
 def get_price_series(ticker: str, time_begin: datetime.datetime,
                      time_end: datetime.datetime) -> List[source.SourcePrice]:
-    dayCount = ceil((time_end - time_begin).days)
+    day_count = math.ceil((time_end - time_begin).days)
     headers = {
-            'X-FT-Source': environ['FINANCIAL_TIMES_API_KEY'],
-        }
-        params = {
-            'symbols': ticker,
-            'endDate': time_end.date.iso_format(),
-            'intervalType': 'day',
-            'interval': '1',
-            'dayCount': dayCount
-        }
+        'X-FT-Source': environ['FINANCIAL_TIMES_API_KEY'],
+    }
+    params = {
+        'symbols': ticker,
+        'endDate': time_end.date().isoformat(),
+        'intervalType': 'day',
+        'interval': '1',
+        'dayCount': str(day_count)
+    }
 
-        resp = requests.get(
-            url='https://markets.ft.com/research/webservices/securities/v1/time-series-interday',
-            params=params, headers=headers)
-        if resp.status_code != requests.codes.ok:
-            raise FinancialTimesError(
-                "Invalid response ({}): {}".format(resp.status_code, resp.text)
-            )
-        data = resp.json()
-        if not data['error'] is None:
-            raise FinancialTimesError(
-                "API Errors: ({}): {}".format(data['error']['errors'][0]['reason'], data['error']['errors'][0]['message'])
-            )
+    resp = requests.get(
+        url= BASE_URL + 'time-series-interday',
+        params=params, headers=headers)
+    if resp.status_code != requests.codes.ok:
+        raise FinancialTimesError(
+            "Invalid response ({}): {}".format(resp.status_code, resp.text)
+        )
+    data = resp.json()
+    if 'error' in data:
+        raise FinancialTimesError(
+            "API Errors: ({}): {}"\
+                .format(
+                    data['error']['errors'][0]['reason'],
+                    data['error']['errors'][0]['message']
+                )
+        )
 
-        base = data['data']['items'][0]['basic']['currency']
+    base = data['data']['items'][0]['basic']['currency']
 
-        return [source.SourcePrice(
-                Decimal(str(item['close'])),
-                datetime.datetime.fromisoformat(item['lastCloseDateTime']),
-                base
-            )
-                for item in data['items'][0]['timeSeries']['timeSeriesData']]
+    prices = []
+
+    for item in data['data']['items'][0]['timeSeries']['timeSeriesData']:
+        date = datetime.datetime.fromisoformat(item['lastCloseDateTime'])
+        if time_begin.date() <= date.date() <= time_end.date():
+            price = Decimal(str(item['close']))
+            prices.append(source.SourcePrice(price, date, base))
+
+    return prices
 
 class Source(source.Source):
     def get_latest_price(self, ticker) -> source.SourcePrice:
@@ -66,16 +77,20 @@ class Source(source.Source):
         }
 
         resp = requests.get(
-            url='https://markets.ft.com/research/webservices/securities/v1/quotes',
+            url= BASE_URL + '/quotes',
             params=params, headers=headers)
         if resp.status_code != requests.codes.ok:
             raise FinancialTimesError(
                 "Invalid response ({}): {}".format(resp.status_code, resp.text)
             )
         data = resp.json()
-        if not data['error'] is None:
+        if 'error' in data:
             raise FinancialTimesError(
-                "API Errors: ({}): {}".format(data['error']['errors'][0]['reason'], data['error']['errors'][0]['message'])
+                "API Errors: ({}): {}"\
+                    .format(
+                        data['error']['errors'][0]['reason'],
+                        data['error']['errors'][0]['message']
+                    )
             )
 
         base = data['data']['items'][0]['basic']['currency']
