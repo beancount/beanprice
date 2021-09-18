@@ -106,17 +106,3 @@ class Source(source.Source):
         res = [source.SourcePrice(x[1], x[0], CURRENCY)
                for x in get_price_series(ticker, time_begin, time_end)]
         return sorted(res, key=lambda x: x.time)
-
-
-if __name__ == '__main__':
-    s = Source()
-    r = s.get_latest_price('040003')
-    print('last')
-    print(r)
-    r = s.get_historical_price('377240', datetime.datetime(2020, 10, 9))
-    print('history')
-    print(r)
-    r = s.get_prices_series('377240', datetime.datetime(2020, 9, 25),
-                            datetime.datetime(2020, 10, 9))
-    print('series')
-    print(r)
