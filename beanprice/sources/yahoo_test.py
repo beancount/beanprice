@@ -197,5 +197,45 @@ class YahooFinancePriceFetcher(unittest.TestCase):
                     'XSP.TO', datetime.datetime(2017, 11, 1, 16, 0, 0, tzinfo=tz.tzutc()))
 
 
+    def test_parse_null_prices_in_series(self):
+        response = MockResponse(textwrap.dedent("""
+            {"chart": {"result":[ {"meta":{
+                "currency":"USD","symbol":"FBIIX",
+                "exchangeName":"NAS","instrumentType":"MUTUALFUND",
+                "firstTradeDate":1570714200,"regularMarketTime":1646053572,
+                "gmtoffset":-18000,"timezone":"EST",
+                "exchangeTimezoneName":"America/New_York",
+                "regularMarketPrice":9.69,"chartPreviousClose":9.69,
+                "priceHint":2,
+                "currentTradingPeriod":{
+                    "pre":{"timezone":"EST","start":1646038800,"end":1646058600,"gmtoffset":-18000},
+                    "regular":{"timezone":"EST","start":1646058600,"end":1646082000,"gmtoffset":-18000},
+                    "post":{"timezone":"EST","start":1646082000,"end":1646096400,"gmtoffset":-18000}
+                },
+                "dataGranularity":"1d","range":"",
+                "validRanges":["1mo","3mo","6mo","ytd","1y","2y","5y","10y","max"]},
+                "timestamp":[1645626600,1645713000,1645799400,1646058600],
+                "indicators":{
+                    "quote":[
+                        {"open":[9.6899995803833,9.710000038146973,9.6899995803833,null],
+                        "low":[9.6899995803833,9.710000038146973,9.6899995803833,null],
+                        "high":[9.6899995803833,9.710000038146973,9.6899995803833,null],
+                        "volume":[0,0,0,null],
+                        "close":[9.6899995803833,9.710000038146973,9.6899995803833,null]}
+                    ],"adjclose":[
+                        {"adjclose":[9.6899995803833,9.710000038146973,9.6899995803833,null]}
+                    ]
+                }}],"error":null}}
+        """))
+
+        with mock.patch('requests.get', return_value=response):
+            srcprice = yahoo.Source().get_historical_price(
+                'XSP.TO', datetime.datetime(2022, 2, 28, 16, 0, 0, tzinfo=tz.tzutc()))              
+            self.assertTrue(isinstance(srcprice.price, Decimal))
+            self.assertEqual(Decimal('9.6899995803833'), srcprice.price)
+            timezone = datetime.timezone(datetime.timedelta(hours=-5), 'America/New_York')
+            self.assertEqual(datetime.datetime(2022, 2, 25, 9, 30, tzinfo=timezone),
+                            srcprice.time)
+            self.assertEqual('USD', srcprice.quote_currency)
 if __name__ == '__main__':
     unittest.main()
