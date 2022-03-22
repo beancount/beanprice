@@ -30,6 +30,7 @@ from beancount.parser import printer
 from beancount.ops import find_prices
 
 from beanprice import date_utils
+from beanprice.source import MissingDate
 import beanprice
 
 
@@ -589,7 +590,11 @@ def fetch_price(dprice: DatedPrice, swap_inverted: bool = False) -> Optional[dat
             source = psource.module.Source()
         except AttributeError:
             continue
-        srcprice = fetch_cached_price(source, psource.symbol, dprice.date)
+        try:
+            srcprice = fetch_cached_price(source, psource.symbol, dprice.date)
+        except MissingDate:
+            logging.debug("Missing date {} for symbol {}".format(dprice.date, psource.symbol))
+            return None
         if srcprice is not None:
             break
     else:
