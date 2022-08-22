@@ -121,7 +121,12 @@ class Source(source.Source):
         }
         payload.update(_DEFAULT_PARAMS)
         response = requests.get(url, params=payload, headers={'User-Agent': None})
-        result = parse_response(response)
+        try:
+            result = parse_response(response)
+        except YahooError as y:
+            # The parse_response method cannot know which ticker failed,
+            # but the user definitely needs to know which ticker failed!
+            raise YahooError("%s (ticker: %s)" % (y, ticker))
         try:
             price = Decimal(result['regularMarketPrice'])
 
