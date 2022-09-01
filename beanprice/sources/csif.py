@@ -111,13 +111,13 @@ class Source(source.Source):
 
         # Find relevant date
         date_str = time.strftime("%d.%m.%Y")
-        pos = response.find(date_str)
+        pos = response.find('<td>' + date_str + '<td>')
 
         # Found?
         if pos < 0:
             # It can happen that a date is missing
             raise source.MissingDate
-        pos = pos + 10
+        pos = pos + 14
 
         # Next occurrences of HTML tags "<td>" and "</td>"
         pos = pos + response[pos:].find('<td>') + 4
