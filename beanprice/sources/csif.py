@@ -111,7 +111,8 @@ class Source(source.Source):
 
         # Find relevant date
         date_str = time.strftime("%d.%m.%Y")
-        pos = response.find('<td>' + date_str + '<td>')
+        find_str = '<td>' + date_str + '</td>'
+        pos = response.find(find_str)
 
         # Found?
         if pos < 0:
