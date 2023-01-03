@@ -6,6 +6,7 @@ __license__ = "GNU GPLv2"
 import argparse
 import collections
 import datetime
+from decimal import Decimal
 import functools
 from os import path
 import shelve
@@ -38,10 +39,13 @@ import beanprice
 #   module: A Python module, the module to be called to create a price source.
 #   symbol: A ticker symbol in the universe of the source.
 #   invert: A boolean, true if we need to invert the currency.
+#   multiplier: A Decimal instance to be multiplied on prices from the source.
+#     This is useful with sources returning 1.23 USD as 123.
 class PriceSource(NamedTuple):
     module: Any
     symbol: str
     invert: bool
+    multiplier: Decimal
 
 
 # A dated price source description.
@@ -151,7 +155,7 @@ def parse_single_source(source: str) -> PriceSource:
 
     Source specifications follow the syntax:
 
-      <module>/[^]<ticker>
+      [<multiplier>*]<module>/[^]<ticker>
 
     The <module> is resolved against the Python path, but first looked up
     under the package where the default price extractors lie.
@@ -163,12 +167,15 @@ def parse_single_source(source: str) -> PriceSource:
     Raises:
       ValueError: If invalid.
     """
-    match = re.match(r'([a-zA-Z]+[a-zA-Z0-9\._]+)/(\^?)([a-zA-Z0-9:=_\-\.\(\)]+)$', source)
+    match = re.match(r'(?:([0-9]+(?:\.[0-9]+)?)\*)?'
+                     r'([a-zA-Z]+[a-zA-Z0-9\._]+)/(\^?)([a-zA-Z0-9:=_\-\.\(\)]+)$', source)
     if not match:
         raise ValueError('Invalid source name: "{}"'.format(source))
-    short_module_name, invert, symbol = match.groups()
+    multiplier_str, short_module_name, invert, symbol = match.groups()
     module = import_source(short_module_name)
-    return PriceSource(module, symbol, bool(invert))
+    multiplier = Decimal(multiplier_str) if multiplier_str else Decimal(1)
+    print(f'{multiplier=} {multiplier_str=}')
+    return PriceSource(module, symbol, bool(invert), multiplier)
 
 
 def import_source(module_name: str):
@@ -323,7 +330,7 @@ def get_price_jobs_at_date(entries: data.Entries,
 
         # If there are no sources, create a default one.
         if not psources:
-            psources = [PriceSource(default_source, base, False)]
+            psources = [PriceSource(default_source, base, False, Decimal(1))]
 
         jobs.append(DatedPrice(base, quote, date, psources))
     return sorted(jobs)
@@ -599,7 +606,7 @@ def fetch_price(dprice: DatedPrice, swap_inverted: bool = False) -> Optional[dat
 
     base = dprice.base
     quote = dprice.quote or srcprice.quote_currency
-    price = srcprice.price
+    price = srcprice.price * psource.multiplier
 
     # Invert the rate if requested.
     if psource.invert:
