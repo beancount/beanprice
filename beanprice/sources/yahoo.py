@@ -40,11 +40,11 @@ def _requestor(*args, **kwargs):
     response = requests.get(*args, **kwargs)
     try:
         response.raise_for_status()
-    except Exception as exc:
+    except requests.HTTPError as exc:
         raise YahooError(
             "HTTP status {}: {}".format(
                 response.status_code,
-                response.text,
+                response.text(),
             )
         ) from exc
     return response
