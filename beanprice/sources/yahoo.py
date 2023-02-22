@@ -65,15 +65,7 @@ def parse_response(response: requests.models.Response) -> Dict:
             ','.join(json.keys())))
     if content['error'] is not None:
         raise YahooError("Error fetching Yahoo data: {}".format(content['error']))
-    try:
-        return content['result'][0]
-    except IndexError as exc:
-        raise YahooError(
-            (
-                "Could not destructure response: "
-                "the content contains zero-length result {}"
-            ).format(content['result'])
-        ) from exc
+    return content['result'][0]
 
 
 # Note: Feel free to suggest more here via a PR.
@@ -112,7 +104,15 @@ def get_price_series(ticker: str,
     }
     payload.update(_DEFAULT_PARAMS)
     response = _requestor(url, params=payload)
-    result = parse_response(response)
+    try:
+        result = parse_response(response)
+    except IndexError as exc:
+        raise YahooError(
+            (
+                "Could not destructure price series for ticker {}: "
+                "the content contains zero-length result"
+            ).format(ticker)
+        ) from exc
 
     meta = result['meta']
     tzone = timezone(timedelta(hours=meta['gmtoffset'] / 3600),
@@ -147,7 +147,15 @@ class Source(source.Source):
         }
         payload.update(_DEFAULT_PARAMS)
         response = _requestor(url, params=payload)
-        result = parse_response(response)
+        try:
+            result = parse_response(response)
+        except IndexError as exc:
+            raise YahooError(
+                (
+                    "Could not destructure latest price for ticker {}: "
+                    "the content contains zero-length result"
+                ).format(ticker)
+            ) from exc
         try:
             price = Decimal(result['regularMarketPrice'])
 
