@@ -33,22 +33,33 @@ def _requestor(*args, **kwargs):
     if "headers" not in kwargs:
         kwargs["headers"] = {}
     # Yahoo! balks without this header.
-    kwargs["headers"]["User-Agent"] = "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0"
+    kwargs["headers"]["User-Agent"] = (
+        "Mozilla/5.0 (X11; Linux x86_64; "
+        "rv:109.0) Gecko/20100101 Firefox/110.0"
+    )
     response = requests.get(*args, **kwargs)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except Exception as exc:
+        raise YahooError(
+            "HTTP status {}: {}".format(
+                response.status_code,
+                response.text(),
+            )
+        ) from exc
     return response
 
 
 def parse_response(response: requests.models.Response) -> Dict:
     """Process as response from Yahoo.
 
+    Assumes the response code is among the OK response codes.
+
     Raises:
       YahooError: If there is an error in the response.
     """
     json = response.json(parse_float=Decimal)
     content = next(iter(json.values()))
-    if response.status_code != requests.codes.ok:
-        raise YahooError("Status {}: {}".format(response.status_code, content['error']))
     if len(json) != 1:
         raise YahooError("Invalid format in response from Yahoo; many keys: {}".format(
             ','.join(json.keys())))
@@ -56,8 +67,13 @@ def parse_response(response: requests.models.Response) -> Dict:
         raise YahooError("Error fetching Yahoo data: {}".format(content['error']))
     try:
         return content['result'][0]
-    except IndexError:
-        raise YahooError("Could not destructure response: the content contains zero-length result {}".format(content['result']))
+    except IndexError as exc:
+        raise YahooError(
+            (
+                "Could not destructure response: "
+                "the content contains zero-length result {}"
+            ).format(content['result'])
+        ) from exc
 
 
 # Note: Feel free to suggest more here via a PR.
