@@ -44,7 +44,7 @@ def _requestor(*args, **kwargs):
         raise YahooError(
             "HTTP status {}: {}".format(
                 response.status_code,
-                response.text(),
+                response.text,
             )
         ) from exc
     return response
