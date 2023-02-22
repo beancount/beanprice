@@ -26,6 +26,10 @@ class MockResponse:
     def json(self, **kwargs):
         return json.loads(self.contents, **kwargs)
 
+    def raise_for_status(self):
+        if self.status_code != requests.codes.ok:
+            raise HTTPError(self.status_code)
+
 
 class YahooFinancePriceFetcher(unittest.TestCase):
 
