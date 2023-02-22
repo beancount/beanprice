@@ -86,6 +86,7 @@ def get_price_series(ticker: str,
     }
     payload.update(_DEFAULT_PARAMS)
     response = requests.get(url, params=payload, headers={'User-Agent': None})
+    response.raise_for_status()
     result = parse_response(response)
 
     meta = result['meta']
@@ -121,6 +122,7 @@ class Source(source.Source):
         }
         payload.update(_DEFAULT_PARAMS)
         response = requests.get(url, params=payload, headers={'User-Agent': None})
+        response.raise_for_status()
         try:
             result = parse_response(response)
         except YahooError as error:
