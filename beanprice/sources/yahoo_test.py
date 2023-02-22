@@ -21,9 +21,14 @@ class MockResponse:
     def __init__(self, contents, status_code=requests.codes.ok):
         self.status_code = status_code
         self.contents = contents
+        self.text = contents
 
     def json(self, **kwargs):
         return json.loads(self.contents, **kwargs)
+
+    def raise_for_status(self):
+        if self.status_code != requests.codes.ok:
+            raise requests.HTTPError(self.status_code)
 
 
 class YahooFinancePriceFetcher(unittest.TestCase):
@@ -157,7 +162,9 @@ class YahooFinancePriceFetcher(unittest.TestCase):
     def test_parse_response_empty_result(self):
         response = MockResponse(
             '{"quoteResponse": {"error": null, "result": []}}')
-        with self.assertRaises(yahoo.YahooError):
+        with self.assertRaises(IndexError):
+            # Callers re-raise a YahooError from here, to provide
+            # superior error messages.
             yahoo.parse_response(response)
 
     def test_parse_response_no_timestamp(self):

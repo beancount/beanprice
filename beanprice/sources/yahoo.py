@@ -29,23 +29,42 @@ class YahooError(ValueError):
     "An error from the Yahoo API."
 
 
+def _requestor(*args, **kwargs):
+    if "headers" not in kwargs:
+        kwargs["headers"] = {}
+    # Yahoo! balks without this header.
+    kwargs["headers"]["User-Agent"] = (
+        "Mozilla/5.0 (X11; Linux x86_64; "
+        "rv:109.0) Gecko/20100101 Firefox/110.0"
+    )
+    response = requests.get(*args, **kwargs)
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        raise YahooError(
+            "HTTP status {}: {}".format(
+                response.status_code,
+                response.text(),
+            )
+        ) from exc
+    return response
+
+
 def parse_response(response: requests.models.Response) -> Dict:
     """Process as response from Yahoo.
+
+    Assumes the response code is among the OK response codes.
 
     Raises:
       YahooError: If there is an error in the response.
     """
     json = response.json(parse_float=Decimal)
     content = next(iter(json.values()))
-    if response.status_code != requests.codes.ok:
-        raise YahooError("Status {}: {}".format(response.status_code, content['error']))
     if len(json) != 1:
         raise YahooError("Invalid format in response from Yahoo; many keys: {}".format(
             ','.join(json.keys())))
     if content['error'] is not None:
         raise YahooError("Error fetching Yahoo data: {}".format(content['error']))
-    if not content['result']:
-        raise YahooError("No data returned from Yahoo, ensure that the symbol is correct")
     return content['result'][0]
 
 
@@ -53,7 +72,6 @@ def parse_response(response: requests.models.Response) -> Dict:
 _MARKETS = {
     'us_market': 'USD',
     'ca_market': 'CAD',
-    'ch_market': 'CHF',
 }
 
 
@@ -85,8 +103,16 @@ def get_price_series(ticker: str,
         'interval': '1d',
     }
     payload.update(_DEFAULT_PARAMS)
-    response = requests.get(url, params=payload, headers={'User-Agent': None})
-    result = parse_response(response)
+    response = _requestor(url, params=payload)
+    try:
+        result = parse_response(response)
+    except IndexError as exc:
+        raise YahooError(
+            (
+                "Could not destructure price series for ticker {}: "
+                "the content contains zero-length result"
+            ).format(ticker)
+        ) from exc
 
     meta = result['meta']
     tzone = timezone(timedelta(hours=meta['gmtoffset'] / 3600),
@@ -120,13 +146,16 @@ class Source(source.Source):
             'exchange': 'NYSE',
         }
         payload.update(_DEFAULT_PARAMS)
-        response = requests.get(url, params=payload, headers={'User-Agent': None})
+        response = _requestor(url, params=payload)
         try:
             result = parse_response(response)
-        except YahooError as error:
-            # The parse_response method cannot know which ticker failed,
-            # but the user definitely needs to know which ticker failed!
-            raise YahooError("%s (ticker: %s)" % (error, ticker)) from error
+        except IndexError as exc:
+            raise YahooError(
+                (
+                    "Could not destructure latest price for ticker {}: "
+                    "the content contains zero-length result"
+                ).format(ticker)
+            ) from exc
         try:
             price = Decimal(result['regularMarketPrice'])
 
