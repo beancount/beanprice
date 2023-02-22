@@ -21,6 +21,7 @@ class MockResponse:
     def __init__(self, contents, status_code=requests.codes.ok):
         self.status_code = status_code
         self.contents = contents
+        self.text = contents
 
     def json(self, **kwargs):
         return json.loads(self.contents, **kwargs)
