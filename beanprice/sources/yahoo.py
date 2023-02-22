@@ -29,6 +29,16 @@ class YahooError(ValueError):
     "An error from the Yahoo API."
 
 
+def _requestor(*args, **kwargs):
+    if "headers" not in kwargs:
+        kwargs["headers"] = {}
+    # Yahoo! balks without this header.
+    kwargs["headers"]["User-Agent"] = "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0"
+    response = requests.get(*args, **kwargs)
+    response.raise_for_status()
+    return response
+
+
 def parse_response(response: requests.models.Response) -> Dict:
     """Process as response from Yahoo.
 
@@ -44,16 +54,16 @@ def parse_response(response: requests.models.Response) -> Dict:
             ','.join(json.keys())))
     if content['error'] is not None:
         raise YahooError("Error fetching Yahoo data: {}".format(content['error']))
-    if not content['result']:
-        raise YahooError("No data returned from Yahoo, ensure that the symbol is correct")
-    return content['result'][0]
+    try:
+        return content['result'][0]
+    except IndexError:
+        raise YahooError("Could not destructure response: the content contains zero-length result {}".format(content['result']))
 
 
 # Note: Feel free to suggest more here via a PR.
 _MARKETS = {
     'us_market': 'USD',
     'ca_market': 'CAD',
-    'ch_market': 'CHF',
 }
 
 
@@ -85,8 +95,7 @@ def get_price_series(ticker: str,
         'interval': '1d',
     }
     payload.update(_DEFAULT_PARAMS)
-    response = requests.get(url, params=payload, headers={'User-Agent': None})
-    response.raise_for_status()
+    response = _requestor(url, params=payload)
     result = parse_response(response)
 
     meta = result['meta']
@@ -121,14 +130,8 @@ class Source(source.Source):
             'exchange': 'NYSE',
         }
         payload.update(_DEFAULT_PARAMS)
-        response = requests.get(url, params=payload, headers={'User-Agent': None})
-        response.raise_for_status()
-        try:
-            result = parse_response(response)
-        except YahooError as error:
-            # The parse_response method cannot know which ticker failed,
-            # but the user definitely needs to know which ticker failed!
-            raise YahooError("%s (ticker: %s)" % (error, ticker)) from error
+        response = _requestor(url, params=payload)
+        result = parse_response(response)
         try:
             price = Decimal(result['regularMarketPrice'])
 
