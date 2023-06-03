@@ -114,7 +114,7 @@ class Source(source.Source):
 
         session = requests.Session()
         session.headers.update({'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0'})
-        session.get('https://fc.yahoo.com')
+        session.get('https://fc.yahoo.com')  # This populates the correct cookies in the session
         crumb = session.get('https://query1.finance.yahoo.com/v1/test/getcrumb').text
 
         url = "https://query1.finance.yahoo.com/v7/finance/quote"
