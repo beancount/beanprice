@@ -131,7 +131,7 @@ class Source(source.Source):
             'exchange': 'NYSE',
         }
         payload.update(_DEFAULT_PARAMS)
-        response = _session.get(url, params=payload, headers={'User-Agent': None})
+        response = _session.get(url, params=payload)
         try:
             result = parse_response(response)
         except YahooError as error:
