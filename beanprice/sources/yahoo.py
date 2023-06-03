@@ -106,22 +106,16 @@ def get_price_series(ticker: str,
     return series, currency
 
 
-# caching cookies for efficiency when making multiple API calls
-_session = None
-_crumb = None
-
-
 class Source(source.Source):
     "Yahoo Finance CSV API price extractor."
 
     def get_latest_price(self, ticker: str) -> Optional[source.SourcePrice]:
         """See contract in beanprice.source.Source."""
 
-        if _session is None or _crumb is None:
-            _session = requests.Session()
-            _session.headers.update({'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0'})
-            _session.get('https://fc.yahoo.com')
-            _crumb = _session.get('https://query1.finance.yahoo.com/v1/test/getcrumb').text
+        session = requests.Session()
+        session.headers.update({'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0'})
+        session.get('https://fc.yahoo.com')
+        crumb = session.get('https://query1.finance.yahoo.com/v1/test/getcrumb').text
 
         url = "https://query1.finance.yahoo.com/v7/finance/quote"
         fields = ['symbol', 'regularMarketPrice', 'regularMarketTime']
@@ -129,9 +123,10 @@ class Source(source.Source):
             'symbols': ticker,
             'fields': ','.join(fields),
             'exchange': 'NYSE',
+            'crumb': crumb,
         }
         payload.update(_DEFAULT_PARAMS)
-        response = _session.get(url, params=payload)
+        response = session.get(url, params=payload)
         try:
             result = parse_response(response)
         except YahooError as error:
