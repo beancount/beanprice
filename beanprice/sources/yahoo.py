@@ -112,15 +112,21 @@ class Source(source.Source):
     def get_latest_price(self, ticker: str) -> Optional[source.SourcePrice]:
         """See contract in beanprice.source.Source."""
 
+        session = requests.Session()
+        session.headers.update({'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0'})
+        session.get('https://fc.yahoo.com')  # This populates the correct cookies in the session
+        crumb = session.get('https://query1.finance.yahoo.com/v1/test/getcrumb').text
+
         url = "https://query1.finance.yahoo.com/v7/finance/quote"
         fields = ['symbol', 'regularMarketPrice', 'regularMarketTime']
         payload = {
             'symbols': ticker,
             'fields': ','.join(fields),
             'exchange': 'NYSE',
+            'crumb': crumb,
         }
         payload.update(_DEFAULT_PARAMS)
-        response = requests.get(url, params=payload, headers={'User-Agent': None})
+        response = session.get(url, params=payload)
         try:
             result = parse_response(response)
         except YahooError as error:
