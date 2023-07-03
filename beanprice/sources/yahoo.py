@@ -78,6 +78,13 @@ def get_price_series(ticker: str,
 
     if requests is None:
         raise YahooError("You must install the 'requests' library.")
+    
+
+    session = requests.Session()
+    session.headers.update({'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0'})
+    session.get('https://fc.yahoo.com')  # This populates the correct cookies in the session
+
+    
     url = "https://query1.finance.yahoo.com/v8/finance/chart/{}".format(ticker)
     payload: Dict[str, Union[int, str]] = {
         'period1': int(time_begin.timestamp()),
@@ -85,7 +92,7 @@ def get_price_series(ticker: str,
         'interval': '1d',
     }
     payload.update(_DEFAULT_PARAMS)
-    response = requests.get(url, params=payload, headers={'User-Agent': None})
+    response = session.get(url, params=payload)
     result = parse_response(response)
 
     meta = result['meta']
