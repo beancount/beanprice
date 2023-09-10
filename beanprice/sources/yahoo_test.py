@@ -196,6 +196,20 @@ class YahooFinancePriceFetcher(unittest.TestCase):
                 srcprice = yahoo.Source().get_historical_price(
                     'XSP.TO', datetime.datetime(2017, 11, 1, 16, 0, 0, tzinfo=tz.tzutc()))
 
+    def test_get_price_series_with_null_close_prices(self):
+        with open(
+            "beanprice/fixtures/close_price_with_null.json", encoding="utf8"
+        ) as response_json:
+            response = MockResponse(response_json.read())
+            with mock.patch("requests.get", return_value=response):
+                # it should not raise TypeError
+                #  TypeError: conversion from NoneType to Decimal is not supported
+                yahoo.get_price_series(
+                    "BGBL.AX",
+                    datetime.datetime(2023, 6, 28, 16, 0, 0, tzinfo=tz.tzutc()),
+                    datetime.datetime(2023, 7, 3, 16, 0, 0, tzinfo=tz.tzutc()),
+                )
+
 
 if __name__ == '__main__':
     unittest.main()

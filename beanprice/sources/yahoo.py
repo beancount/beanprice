@@ -100,7 +100,7 @@ def get_price_series(ticker: str,
     timestamp_array = result['timestamp']
     close_array = result['indicators']['quote'][0]['close']
     series = [(datetime.fromtimestamp(timestamp, tz=tzone), Decimal(price))
-              for timestamp, price in zip(timestamp_array, close_array)]
+              for timestamp, price in zip(timestamp_array, close_array) if price]
 
     currency = result['meta']['currency']
     return series, currency
