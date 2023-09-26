@@ -100,12 +100,12 @@ def get_price_series(ticker: str,
     timestamp_array = result['timestamp']
     close_array = result['indicators']['quote'][0]['close']
     series = [(datetime.fromtimestamp(timestamp, tz=tzone), Decimal(price))
-              for timestamp, price in zip(timestamp_array, close_array)]
+              for timestamp, price in zip(timestamp_array, close_array) if price]
 
     currency = result['meta']['currency']
     return series, currency
 
-
+_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0'
 class Source(source.Source):
     "Yahoo Finance CSV API price extractor."
 
@@ -113,8 +113,9 @@ class Source(source.Source):
         """See contract in beanprice.source.Source."""
 
         session = requests.Session()
-        session.headers.update({'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0'})
-        session.get('https://fc.yahoo.com')  # This populates the correct cookies in the session
+        session.headers.update({'User-Agent': _USER_AGENT})
+        # This populates the correct cookies in the session
+        session.get('https://fc.yahoo.com')
         crumb = session.get('https://query1.finance.yahoo.com/v1/test/getcrumb').text
 
         url = "https://query1.finance.yahoo.com/v7/finance/quote"
