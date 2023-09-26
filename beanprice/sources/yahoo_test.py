@@ -202,13 +202,16 @@ class YahooFinancePriceFetcher(unittest.TestCase):
         ) as response_json:
             response = MockResponse(response_json.read())
             with mock.patch("requests.get", return_value=response):
-                # it should not raise TypeError
-                #  TypeError: conversion from NoneType to Decimal is not supported
-                yahoo.get_price_series(
-                    "BGBL.AX",
-                    datetime.datetime(2023, 6, 28, 16, 0, 0, tzinfo=tz.tzutc()),
-                    datetime.datetime(2023, 7, 3, 16, 0, 0, tzinfo=tz.tzutc()),
-                )
+                try:
+                    yahoo.get_price_series(
+                        "BGBL.AX",
+                        datetime.datetime(2023, 6, 28, 16, 0, 0, tzinfo=tz.tzutc()),
+                        datetime.datetime(2023, 7, 3, 16, 0, 0, tzinfo=tz.tzutc()),
+                    )
+                except TypeError:
+                    # it should not raise TypeError
+                    #  TypeError: conversion from NoneType to Decimal is not supported
+                    self.fail("get_price_series() raised TypeError unexpectedly!")
 
 
 if __name__ == '__main__':
