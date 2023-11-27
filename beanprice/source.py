@@ -31,6 +31,10 @@ SourcePrice = NamedTuple('SourcePrice',
                           ('quote_currency', Optional[str])])
 
 
+class MissingDate(BaseException):
+    """An attempt to read a missing date, ignore and continue"""
+
+
 class Source:
     """Interface to be implemented by all price sources.
 
