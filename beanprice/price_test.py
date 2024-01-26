@@ -26,6 +26,7 @@ from beanprice.sources import yahoo
 
 
 PS = price.PriceSource
+ONE = Decimal(1)
 
 
 def run_with_args(function, args, runner_file=None):
@@ -225,7 +226,7 @@ class TestProcessArguments(unittest.TestCase):
             self.assertEqual(
                 [price.DatedPrice(
                     'AAPL', 'USD', None,
-                    [price.PriceSource(yahoo, 'AAPL', False)])], jobs)
+                    [PS(yahoo, 'AAPL', False, ONE)])], jobs)
 
 
 class TestClobber(cmptest.TestCase):
@@ -292,7 +293,7 @@ class TestTimezone(unittest.TestCase):
         dprice = price.DatedPrice('JPY', 'USD', datetime.date(2015, 11, 22), None)
         with self.assertRaises(ValueError):
             price.fetch_price(dprice._replace(sources=[
-                price.PriceSource(yahoo, 'USDJPY', False)]), False)
+                PS(yahoo, 'USDJPY', False, ONE)]), False)
 
 
 class TestInverted(unittest.TestCase):
@@ -309,21 +310,39 @@ class TestInverted(unittest.TestCase):
 
     def test_fetch_price__normal(self):
         entry = price.fetch_price(self.dprice._replace(sources=[
-            price.PriceSource(yahoo, 'USDJPY', False)]), False)
+            PS(yahoo, 'USDJPY', False, ONE)]), False)
         self.assertEqual(('JPY', 'USD'), (entry.currency, entry.amount.currency))
         self.assertEqual(Decimal('125.00'), entry.amount.number)
 
     def test_fetch_price__inverted(self):
         entry = price.fetch_price(self.dprice._replace(sources=[
-            price.PriceSource(yahoo, 'USDJPY', True)]), False)
+            PS(yahoo, 'USDJPY', True, ONE)]), False)
         self.assertEqual(('JPY', 'USD'), (entry.currency, entry.amount.currency))
         self.assertEqual(Decimal('0.008'), entry.amount.number)
 
     def test_fetch_price__swapped(self):
         entry = price.fetch_price(self.dprice._replace(sources=[
-            price.PriceSource(yahoo, 'USDJPY', True)]), True)
+            PS(yahoo, 'USDJPY', True, ONE)]), True)
         self.assertEqual(('USD', 'JPY'), (entry.currency, entry.amount.currency))
         self.assertEqual(Decimal('125.00'), entry.amount.number)
+
+
+class TestMultiplier(unittest.TestCase):
+
+    def test_multiplier(self):
+        fetch_cached = mock.patch('beanprice.price.fetch_cached_price').start()
+        self.addCleanup(mock.patch.stopall)
+        fetch_cached.return_value = SourcePrice(
+            Decimal('16824.00'), datetime.datetime(2023, 1, 1, 16, 0, 0,
+                                                   tzinfo=tz.tzlocal()),
+            None)
+        dprice = price.DatedPrice(
+            'GBP', 'XSDR', datetime.date(2023, 1, 1), [
+                PS(yahoo, 'XSDR.L', False, Decimal('0.01')),
+            ])
+        entry = price.fetch_price(dprice)
+        self.assertEqual(('GBP', 'XSDR'), (entry.currency, entry.amount.currency))
+        self.assertEqual('168.2400', str(entry.amount.number))
 
 
 class TestImportSource(unittest.TestCase):
@@ -352,22 +371,25 @@ class TestParseSource(unittest.TestCase):
         with self.assertRaises(ImportError):
             price.parse_single_source('invalid.module.name/NASDAQ:AAPL')
 
-    def test_source_valid(self):
-        psource = price.parse_single_source('yahoo/CNYUSD=X')
-        self.assertEqual(PS(yahoo, 'CNYUSD=X', False), psource)
-
         # Make sure that an invalid name at the tail doesn't succeed.
         with self.assertRaises(ValueError):
             psource = price.parse_single_source('yahoo/CNYUSD&X')
 
+    def test_source_valid(self):
+        psource = price.parse_single_source('yahoo/CNYUSD=X')
+        self.assertEqual(PS(yahoo, 'CNYUSD=X', False, ONE), psource)
+
         psource = price.parse_single_source('beanprice.sources.yahoo/AAPL')
-        self.assertEqual(PS(yahoo, 'AAPL', False), psource)
+        self.assertEqual(PS(yahoo, 'AAPL', False, ONE), psource)
+
+        psource = price.parse_single_source('0.01*yahoo/XSDR.L')
+        self.assertEqual(PS(yahoo, 'XSDR.L', False, Decimal('0.01')), psource)
 
 
 class TestParseSourceMap(unittest.TestCase):
 
     def _clean_source_map(self, smap):
-        return {currency: [PS(s[0].__name__, s[1], s[2]) for s in sources]
+        return {currency: [PS(s[0].__name__, s[1], s[2], s[3]) for s in sources]
                 for currency, sources in smap.items()}
 
     def test_source_map_invalid(self):
@@ -378,38 +400,49 @@ class TestParseSourceMap(unittest.TestCase):
     def test_source_map_onecur_single(self):
         smap = price.parse_source_map('USD:yahoo/AAPL')
         self.assertEqual(
-            {'USD': [PS('beanprice.sources.yahoo', 'AAPL', False)]},
+            {'USD': [PS('beanprice.sources.yahoo', 'AAPL', False, ONE)]},
             self._clean_source_map(smap))
 
     def test_source_map_onecur_multiple(self):
         smap = price.parse_source_map('USD:oanda/USDCAD,yahoo/CAD=X')
         self.assertEqual(
-            {'USD': [PS('beanprice.sources.oanda', 'USDCAD', False),
-                     PS('beanprice.sources.yahoo', 'CAD=X', False)]},
+            {'USD': [PS('beanprice.sources.oanda', 'USDCAD', False, ONE),
+                     PS('beanprice.sources.yahoo', 'CAD=X', False, ONE)]},
             self._clean_source_map(smap))
 
     def test_source_map_manycur_single(self):
         smap = price.parse_source_map('USD:yahoo/USDCAD '
                                       'CAD:yahoo/CAD=X')
         self.assertEqual(
-            {'USD': [PS('beanprice.sources.yahoo', 'USDCAD', False)],
-             'CAD': [PS('beanprice.sources.yahoo', 'CAD=X', False)]},
+            {'USD': [PS('beanprice.sources.yahoo', 'USDCAD', False, ONE)],
+             'CAD': [PS('beanprice.sources.yahoo', 'CAD=X', False, ONE)]},
             self._clean_source_map(smap))
 
     def test_source_map_manycur_multiple(self):
         smap = price.parse_source_map('USD:yahoo/GBPUSD,oanda/GBPUSD '
                                       'CAD:yahoo/GBPCAD')
         self.assertEqual(
-            {'USD': [PS('beanprice.sources.yahoo', 'GBPUSD', False),
-                     PS('beanprice.sources.oanda', 'GBPUSD', False)],
-             'CAD': [PS('beanprice.sources.yahoo', 'GBPCAD', False)]},
+            {'USD': [PS('beanprice.sources.yahoo', 'GBPUSD', False, ONE),
+                     PS('beanprice.sources.oanda', 'GBPUSD', False, ONE)],
+             'CAD': [PS('beanprice.sources.yahoo', 'GBPCAD', False, ONE)]},
             self._clean_source_map(smap))
 
     def test_source_map_inverse(self):
         smap = price.parse_source_map('USD:yahoo/^GBPUSD')
         self.assertEqual(
-            {'USD': [PS('beanprice.sources.yahoo', 'GBPUSD', True)]},
+            {'USD': [PS('beanprice.sources.yahoo', 'GBPUSD', True, ONE)]},
             self._clean_source_map(smap))
+
+    def test_source_map_multiplier(self):
+        smap = price.parse_source_map(
+            'GBP:0.01*yahoo/XSDR.L;GBP:yahoo/XSDR;USD:1000*yahoo/mXSDRUSD')
+        print(smap)
+        self.assertEqual({
+            'GBP': [PS('beanprice.sources.yahoo', 'XSDR.L', False, Decimal('0.01')),
+                    PS('beanprice.sources.yahoo', 'XSDR', False, ONE)],
+            'USD': [PS('beanprice.sources.yahoo', 'mXSDRUSD', False, Decimal(1000))],
+
+        }, self._clean_source_map(smap))
 
 
 class TestFilters(unittest.TestCase):
