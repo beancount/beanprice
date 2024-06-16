@@ -193,7 +193,7 @@ class YahooFinancePriceFetcher(unittest.TestCase):
         """))
         with self.assertRaises(yahoo.YahooError):
             with mock.patch('requests.get', return_value=response):
-                srcprice = yahoo.Source().get_historical_price(
+                _ = yahoo.Source().get_historical_price(
                     'XSP.TO', datetime.datetime(2017, 11, 1, 16, 0, 0, tzinfo=tz.tzutc()))
 
 
@@ -230,7 +230,7 @@ class YahooFinancePriceFetcher(unittest.TestCase):
 
         with mock.patch('requests.get', return_value=response):
             srcprice = yahoo.Source().get_historical_price(
-                'XSP.TO', datetime.datetime(2022, 2, 28, 16, 0, 0, tzinfo=tz.tzutc()))              
+                'XSP.TO', datetime.datetime(2022, 2, 28, 16, 0, 0, tzinfo=tz.tzutc()))
             self.assertTrue(isinstance(srcprice.price, Decimal))
             self.assertEqual(Decimal('9.6899995803833'), srcprice.price)
             timezone = datetime.timezone(datetime.timedelta(hours=-5), 'America/New_York')

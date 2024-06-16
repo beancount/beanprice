@@ -1,0 +1,85 @@
+[build-system]
+requires = ['setuptools']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'beanprice'
+version = '1.2.0'
+description = 'Price quotes fetcher for Beancount'
+license = { file = 'COPYING' }
+readme = 'README.md'
+authors = [
+    { name = 'Martin Blais', email = 'blais@furius.ca' },
+]
+maintainers = [
+    { name = 'Martin Blais', email = 'blais@furius.ca' },
+]
+keywords = [
+    'accounting', 'ledger', 'beancount', 'price'
+]
+classifiers = [
+    'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: SQL',
+    'Topic :: Office/Business :: Financial :: Accounting',
+]
+requires-python = '>= 3.8'
+dependencies = [
+    'beancount >= 2.3.4',
+    'python-dateutil >= 2.6.0',
+    'requests >= 2.0',
+]
+
+[project.scripts]
+bean-query = 'beanprice.price:main'
+
+[project.urls]
+homepage = 'https://github.com/beancount/beanprice'
+issues = 'https://github.com/beancount/beanprice/issues'
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    'if typing.TYPE_CHECKING:',
+]
+
+[tool.ruff]
+line-length = 92
+target-version = 'py38'
+
+[tool.ruff.lint]
+select = ['E', 'F', 'W', 'UP', 'B', 'C4', 'PL', 'RUF']
+
+# TODO(blais): Review these ignores.
+ignore = [
+    'RUF013',
+    'RUF005',
+    'PLW0603',
+    'UP014',
+    'UP031',
+    'B007',
+    'B905',
+    'C408',
+    'E731',
+    'PLR0911',
+    'PLR0912',
+    'PLR0913',
+    'PLR0915',
+    'PLR1714',
+    'PLR2004',
+    'PLW2901',
+    'RUF012',
+    'UP007',
+    'UP032',
+]

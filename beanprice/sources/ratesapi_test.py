@@ -23,12 +23,12 @@ def response(contents, status_code=requests.codes.ok):
 class RatesapiPriceFetcher(unittest.TestCase):
 
     def test_error_invalid_ticker(self):
-        with self.assertRaises(ValueError) as exc:
+        with self.assertRaises(ValueError):
             ratesapi.Source().get_latest_price('INVALID')
 
     def test_error_network(self):
         with response('Foobar', 404):
-            with self.assertRaises(ValueError) as exc:
+            with self.assertRaises(ValueError):
                 ratesapi.Source().get_latest_price('EUR-CHF')
 
     def test_valid_response(self):

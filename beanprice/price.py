@@ -388,8 +388,6 @@ def get_price_jobs_up_to_date(entries,
     # Look at both latest prices and start dates.
     lifetimes_map = lifetimes.get_commodity_lifetimes(entries)
     commodity_map = getters.get_commodity_directives(entries)
-    price_start_dates = {}
-    stale_currencies = set()
 
     if inactive:
         for base_quote in currencies:

@@ -45,7 +45,8 @@ TSP_FUND_NAMES = [
 csv.register_dialect('tsp',
                      delimiter=',',
                      quoting=csv.QUOTE_NONE,
-                     quotechar='',
+                     # NOTE(blais): This fails to import in 3.12 (and perhaps before).
+                     # quotechar='',
                      lineterminator='\n')
 
 class TSPError(ValueError):
@@ -120,7 +121,6 @@ class Source(source.Source):
                     "\n\t".join(TSP_FUND_NAMES)))
 
         url = "https://secure.tsp.gov/components/CORS/getSharePricesRaw.html"
-        fields = ['startdate', 'enddate', 'download', 'Lfunds', 'InvFunds']
         payload = {
             # Grabbing the last fourteen days of data in event the markets were closed.
             'startdate' : (time - datetime.timedelta(days=14)).strftime("%Y%m%d"),
@@ -132,7 +132,7 @@ class Source(source.Source):
 
         response = requests.get(url, params=payload)
         result = parse_response(response)
-        trade_day = list(result.items())[0]
+        trade_day = next(iter(result.items()))
         prices = trade_day[1]
 
         try:

@@ -114,7 +114,7 @@ class Source(source.Source):
                                                 time +
                                                 datetime.timedelta(days=-1),
                                                 time + datetime.timedelta(days=1)):
-            if not datapoint.time is None and datapoint.time.date() == time.date():
+            if datapoint.time is not None and datapoint.time.date() == time.date():
                 return datapoint
         return None
 
