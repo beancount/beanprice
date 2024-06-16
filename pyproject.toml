@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'beanprice'
-version = '1.2.0'
+version = '1.2.1'
 description = 'Price quotes fetcher for Beancount'
 license = { file = 'COPYING' }
 readme = 'README.md'
@@ -37,7 +37,7 @@ dependencies = [
 ]
 
 [project.scripts]
-bean-query = 'beanprice.price:main'
+bean-price = 'beanprice.price:main'
 
 [project.urls]
 homepage = 'https://github.com/beancount/beanprice'
