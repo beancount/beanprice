@@ -29,43 +29,44 @@ def _parse_ticker(ticker):
     Returns:
       A pair of (base, quote) currencies.
     """
-    match = re.match(r'^(?P<symbol>\w+)-(?P<base>\w+)$', ticker)
+    match = re.match(r"^(?P<symbol>\w+)-(?P<base>\w+)$", ticker)
     if not match:
-        raise ValueError(
-            'Invalid ticker. Use "BASE-SYMBOL" format.')
+        raise ValueError('Invalid ticker. Use "BASE-SYMBOL" format.')
     return match.groups()
 
 
 class Source(source.Source):
-
     def get_latest_price(self, ticker):
         symbol, base = _parse_ticker(ticker)
         headers = {
-            'X-CMC_PRO_API_KEY': environ['COINMARKETCAP_API_KEY'],
+            "X-CMC_PRO_API_KEY": environ["COINMARKETCAP_API_KEY"],
         }
         params = {
-            'symbol': symbol,
-            'convert': base,
+            "symbol": symbol,
+            "convert": base,
         }
 
         resp = requests.get(
-            url='https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
-            params=params, headers=headers)
+            url="https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest",
+            params=params,
+            headers=headers,
+        )
         if resp.status_code != requests.codes.ok:
             raise CoinmarketcapApiError(
                 "Invalid response ({}): {}".format(resp.status_code, resp.text)
             )
         data = resp.json()
-        if data['status']['error_code'] != 0:
-            status = data['status']
+        if data["status"]["error_code"] != 0:
+            status = data["status"]
             raise CoinmarketcapApiError(
                 "Invalid response ({}): {}".format(
-                    status['error_code'], status['error_message'])
+                    status["error_code"], status["error_message"]
+                )
             )
 
-        quote = data['data'][symbol]['quote'][base]
-        price = Decimal(str(quote['price']))
-        date = parse(quote['last_updated'])
+        quote = data["data"][symbol]["quote"][base]
+        price = Decimal(str(quote["price"]))
+        date = parse(quote["last_updated"])
 
         return source.SourcePrice(price, date, base)
 

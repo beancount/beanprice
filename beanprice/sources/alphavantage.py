@@ -37,6 +37,7 @@ from beanprice import source
 class AlphavantageApiError(ValueError):
     "An error from the Alphavantage API."
 
+
 def _parse_ticker(ticker):
     """Parse the base and quote currencies from the ticker.
 
@@ -45,60 +46,61 @@ def _parse_ticker(ticker):
     Returns:
       A (kind, symbol, base) tuple.
     """
-    match = re.match(r'^(?P<kind>price|fx):(?P<symbol>[^:]+):(?P<base>\w+)$', ticker)
+    match = re.match(r"^(?P<kind>price|fx):(?P<symbol>[^:]+):(?P<base>\w+)$", ticker)
     if not match:
-        raise ValueError(
-            'Invalid ticker. Use "price:SYMBOL:BASE" or "fx:CCY:BASE" format.')
+        raise ValueError('Invalid ticker. Use "price:SYMBOL:BASE" or "fx:CCY:BASE" format.')
     return match.groups()
 
-def _do_fetch(params):
-    params['apikey'] = environ['ALPHAVANTAGE_API_KEY']
 
-    resp = requests.get(url='https://www.alphavantage.co/query', params=params)
+def _do_fetch(params):
+    params["apikey"] = environ["ALPHAVANTAGE_API_KEY"]
+
+    resp = requests.get(url="https://www.alphavantage.co/query", params=params)
     data = resp.json()
     # This is for dealing with the rate limit, sleep for 60 seconds and then retry
-    if 'Note' in data:
+    if "Note" in data:
         sleep(60)
-        resp = requests.get(url='https://www.alphavantage.co/query', params=params)
+        resp = requests.get(url="https://www.alphavantage.co/query", params=params)
         data = resp.json()
 
     if resp.status_code != requests.codes.ok:
-        raise AlphavantageApiError("Invalid response ({}): {}".format(resp.status_code,
-                                                        resp.text))
+        raise AlphavantageApiError(
+            "Invalid response ({}): {}".format(resp.status_code, resp.text)
+        )
 
-    if 'Error Message' in data:
-        raise AlphavantageApiError("Invalid response: {}".format(data['Error Message']))
+    if "Error Message" in data:
+        raise AlphavantageApiError("Invalid response: {}".format(data["Error Message"]))
 
     return data
 
 
 class Source(source.Source):
-
     def get_latest_price(self, ticker):
         kind, symbol, base = _parse_ticker(ticker)
 
-        if kind == 'price':
+        if kind == "price":
             params = {
-                'function': 'GLOBAL_QUOTE',
-                'symbol': symbol,
+                "function": "GLOBAL_QUOTE",
+                "symbol": symbol,
             }
             data = _do_fetch(params)
 
-            price_data = data['Global Quote']
-            price = Decimal(price_data['05. price'])
-            date = parse(price_data['07. latest trading day']).replace(tzinfo=tz.tzutc())
+            price_data = data["Global Quote"]
+            price = Decimal(price_data["05. price"])
+            date = parse(price_data["07. latest trading day"]).replace(tzinfo=tz.tzutc())
         else:
             params = {
-                'function': 'CURRENCY_EXCHANGE_RATE',
-                'from_currency': symbol,
-                'to_currency': base,
+                "function": "CURRENCY_EXCHANGE_RATE",
+                "from_currency": symbol,
+                "to_currency": base,
             }
             data = _do_fetch(params)
 
-            price_data = data['Realtime Currency Exchange Rate']
-            price = Decimal(price_data['5. Exchange Rate'])
-            date = parse(price_data['6. Last Refreshed']).replace(
-                tzinfo=tz.gettz(price_data['7. Time Zone']))
+            price_data = data["Realtime Currency Exchange Rate"]
+            price = Decimal(price_data["5. Exchange Rate"])
+            date = parse(price_data["6. Last Refreshed"]).replace(
+                tzinfo=tz.gettz(price_data["7. Time Zone"])
+            )
 
         return source.SourcePrice(price, date, base)
 

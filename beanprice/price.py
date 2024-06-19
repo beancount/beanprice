@@ -1,5 +1,5 @@
-"""Driver code for the price script.
-"""
+"""Driver code for the price script."""
+
 __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
@@ -63,22 +63,22 @@ class DatedPrice(NamedTuple):
 
 
 # The Python package where the default sources are found.
-DEFAULT_PACKAGE = 'beanprice.sources'
+DEFAULT_PACKAGE = "beanprice.sources"
 
 
 # Stand-in currency name for unknown currencies.
-UNKNOWN_CURRENCY = '?'
+UNKNOWN_CURRENCY = "?"
 
 
 # A cache for the prices.
 _CACHE = None
 
 # Expiration for latest prices in the cache.
-DEFAULT_EXPIRATION = datetime.timedelta(seconds=30*60)  # 30 mins.
+DEFAULT_EXPIRATION = datetime.timedelta(seconds=30 * 60)  # 30 mins.
 
 
 # The default source parser is back.
-DEFAULT_SOURCE = 'beanprice.sources.yahoo'
+DEFAULT_SOURCE = "beanprice.sources.yahoo"
 
 
 def format_dated_price_str(dprice: DatedPrice) -> str:
@@ -89,15 +89,16 @@ def format_dated_price_str(dprice: DatedPrice) -> str:
     Returns:
       The string for a DatedPrice instance.
     """
-    psstrs = ['{}({}{})'.format(psource.module.__name__,
-                                '1/' if psource.invert else '',
-                                psource.symbol)
-              for psource in dprice.sources]
-    base_quote = '{} /{}'.format(dprice.base, dprice.quote)
-    return '{:<32} @ {:10} [ {} ]'.format(
-        base_quote,
-        dprice.date.isoformat() if dprice.date else 'latest',
-        ','.join(psstrs))
+    psstrs = [
+        "{}({}{})".format(
+            psource.module.__name__, "1/" if psource.invert else "", psource.symbol
+        )
+        for psource in dprice.sources
+    ]
+    base_quote = "{} /{}".format(dprice.base, dprice.quote)
+    return "{:<32} @ {:10} [ {} ]".format(
+        base_quote, dprice.date.isoformat() if dprice.date else "latest", ",".join(psstrs)
+    )
 
 
 def parse_source_map(source_map_spec: str) -> Dict[str, List[PriceSource]]:
@@ -133,16 +134,15 @@ def parse_source_map(source_map_spec: str) -> Dict[str, List[PriceSource]]:
       ValueError: If an invalid pattern has been specified.
     """
     source_map: Dict[str, List[PriceSource]] = collections.defaultdict(list)
-    for source_list_spec in re.split('[ ;]', source_map_spec):
-        match = re.match('({}):(.*)$'.format(amount.CURRENCY_RE),
-                         source_list_spec)
+    for source_list_spec in re.split("[ ;]", source_map_spec):
+        match = re.match("({}):(.*)$".format(amount.CURRENCY_RE), source_list_spec)
         if not match:
             raise ValueError('Invalid source map pattern: "{}"'.format(source_list_spec))
 
         currency, source_strs = match.groups()
         source_map[currency].extend(
-            parse_single_source(source_str)
-            for source_str in source_strs.split(','))
+            parse_single_source(source_str) for source_str in source_strs.split(",")
+        )
     return source_map
 
 
@@ -163,7 +163,7 @@ def parse_single_source(source: str) -> PriceSource:
     Raises:
       ValueError: If invalid.
     """
-    match = re.match(r'([a-zA-Z]+[a-zA-Z0-9\._]+)/(\^?)([a-zA-Z0-9:=_\-\.\(\)]+)$', source)
+    match = re.match(r"([a-zA-Z]+[a-zA-Z0-9\._]+)/(\^?)([a-zA-Z0-9:=_\-\.\(\)]+)$", source)
     if not match:
         raise ValueError('Invalid source name: "{}"'.format(source))
     short_module_name, invert, symbol = match.groups()
@@ -184,7 +184,7 @@ def import_source(module_name: str):
     Raises:
       ImportError: If the module cannot be imported.
     """
-    default_name = '{}.{}'.format(DEFAULT_PACKAGE, module_name)
+    default_name = "{}.{}".format(DEFAULT_PACKAGE, module_name)
     try:
         __import__(default_name)
         return sys.modules[default_name]
@@ -193,13 +193,14 @@ def import_source(module_name: str):
             __import__(module_name)
             return sys.modules[module_name]
         except ImportError as exc:
-            raise ImportError('Could not find price source module "{}"'.format(
-                module_name)) from exc
+            raise ImportError(
+                'Could not find price source module "{}"'.format(module_name)
+            ) from exc
 
 
 def find_currencies_declared(
-        entries: data.Entries,
-        date: datetime.date = None) -> List[Tuple[str, str, List[PriceSource]]]:
+    entries: data.Entries, date: datetime.date = None
+) -> List[Tuple[str, str, List[PriceSource]]]:
     """Return currencies declared in Commodity directives.
 
     If a 'price' metadata field is provided, include all the quote currencies
@@ -226,17 +227,21 @@ def find_currencies_declared(
         # First, we look for a "price" metadata field, which defines conversions
         # for various currencies. Each of these quote currencies generates a
         # pair in the output.
-        source_str = entry.meta.get('price', None)
+        source_str = entry.meta.get("price", None)
         if source_str is not None:
             if source_str == "":
-                logging.debug("Skipping ignored currency (with empty price): %s",
-                              entry.currency)
+                logging.debug(
+                    "Skipping ignored currency (with empty price): %s", entry.currency
+                )
                 continue
             try:
                 source_map = parse_source_map(source_str)
             except ValueError as exc:
-                logging.warning("Ignoring currency with invalid 'price' source: %s (%s)",
-                                entry.currency, exc)
+                logging.warning(
+                    "Ignoring currency with invalid 'price' source: %s (%s)",
+                    entry.currency,
+                    exc,
+                )
             else:
                 for quote, psources in source_map.items():
                     currencies.append((entry.currency, quote, psources))
@@ -258,13 +263,15 @@ def log_currency_list(message, currencies):
     """
     logging.debug("-------- {}:".format(message))
     for base, quote in currencies:
-        logging.debug("  {:>32}".format('{} /{}'.format(base, quote)))
+        logging.debug("  {:>32}".format("{} /{}".format(base, quote)))
 
 
-def get_price_jobs_at_date(entries: data.Entries,
-                           date: Optional[datetime.date] = None,
-                           inactive: bool = False,
-                           undeclared_source: Optional[str] = None):
+def get_price_jobs_at_date(
+    entries: data.Entries,
+    date: Optional[datetime.date] = None,
+    inactive: bool = False,
+    undeclared_source: Optional[str] = None,
+):
     """Get a list of prices to fetch from a stream of entries.
 
     The active holdings held on the given date are included.
@@ -285,8 +292,7 @@ def get_price_jobs_at_date(entries: data.Entries,
     # tickers for each (base, quote) pair. This is the only place tickers
     # appear.
     declared_triples = find_currencies_declared(entries, date)
-    currency_map = {(base, quote): psources
-                    for base, quote, psources in declared_triples}
+    currency_map = {(base, quote): psources for base, quote, psources in declared_triples}
 
     # Compute the initial list of currencies to consider.
     if undeclared_source:
@@ -333,12 +339,14 @@ def get_price_jobs_at_date(entries: data.Entries,
 # or perhaps to extend it to intervals, and let the price source decide for
 # itself how to implement fetching (e.g., use a single call + filter, or use
 # multiple calls). Querying independently for each day is not the best strategy.
-def get_price_jobs_up_to_date(entries,
-                              date_last=None,
-                              inactive=False,
-                              undeclared_source=None,
-                              update_rate='weekday',
-                              compress_days=1):
+def get_price_jobs_up_to_date(
+    entries,
+    date_last=None,
+    inactive=False,
+    undeclared_source=None,
+    update_rate="weekday",
+    compress_days=1,
+):
     """Get a list of trailing prices to fetch from a stream of entries.
 
     The list of dates runs from the latest available price up to the latest date.
@@ -360,8 +368,7 @@ def get_price_jobs_up_to_date(entries,
     # tickers for each (base, quote) pair. This is the only place tickers
     # appear.
     declared_triples = find_currencies_declared(entries, date_last)
-    currency_map = {(base, quote): psources
-                    for base, quote, psources in declared_triples}
+    currency_map = {(base, quote): psources for base, quote, psources in declared_triples}
 
     # Compute the initial list of currencies to consider.
     if undeclared_source:
@@ -380,7 +387,6 @@ def get_price_jobs_up_to_date(entries,
         default_source = None
 
     log_currency_list("Currencies in primary list", currencies)
-
 
     # By default, restrict to only the currencies with non-zero balances
     # up to the given date.
@@ -408,16 +414,15 @@ def get_price_jobs_up_to_date(entries,
     for base_quote in lifetimes_map:
         intervals = lifetimes_map[base_quote]
         result = prices.get_latest_price(price_map, base_quote)
-        if (result is None or result[0] is None):
+        if result is None or result[0] is None:
             lifetimes_map[base_quote] = lifetimes.trim_intervals(intervals, None, date_last)
         else:
             latest_price_date = result[0]
             date_first = latest_price_date + datetime.timedelta(days=1)
             if date_first < date_last:
-                lifetimes_map[base_quote] = \
-                    lifetimes.trim_intervals(intervals,
-                                            date_first,
-                                            date_last)
+                lifetimes_map[base_quote] = lifetimes.trim_intervals(
+                    intervals, date_first, date_last
+                )
             else:
                 # We don't need to update if we're already up to date.
                 lifetimes_map[base_quote] = []
@@ -430,22 +435,18 @@ def get_price_jobs_up_to_date(entries,
                 del lifetimes_map[key]
 
     # Create price jobs based on fetch rate
-    if update_rate == 'daily':
+    if update_rate == "daily":
         required_prices = lifetimes.required_daily_prices(
-            lifetimes_map,
-            date_last,
-            weekdays_only=False)
-    elif update_rate == 'weekday':
+            lifetimes_map, date_last, weekdays_only=False
+        )
+    elif update_rate == "weekday":
         required_prices = lifetimes.required_daily_prices(
-            lifetimes_map,
-            date_last,
-            weekdays_only=True)
-    elif update_rate == 'weekly':
-        required_prices = lifetimes.required_weekly_prices(
-            lifetimes_map,
-            date_last)
+            lifetimes_map, date_last, weekdays_only=True
+        )
+    elif update_rate == "weekly":
+        required_prices = lifetimes.required_weekly_prices(lifetimes_map, date_last)
     else:
-        raise ValueError('Invalid Update Rate')
+        raise ValueError("Invalid Update Rate")
 
     jobs = []
     # Build up the list of jobs to fetch prices for.
@@ -491,15 +492,17 @@ def fetch_cached_price(source, symbol, date):
 
     if _CACHE is None:
         # The cache is disabled; just call and return.
-        result = (source.get_latest_price(symbol)
-                  if time is None else
-                  source.get_historical_price(symbol, time))
+        result = (
+            source.get_latest_price(symbol)
+            if time is None
+            else source.get_historical_price(symbol, time)
+        )
 
     else:
         # The cache is enabled and we have to compute the current/latest price.
         # Try to fetch from the cache but miss if the price is too old.
         md5 = hashlib.md5()
-        md5.update(str((type(source).__module__, symbol, date)).encode('utf-8'))
+        md5.update(str((type(source).__module__, symbol, date)).encode("utf-8"))
         key = md5.hexdigest()
         timestamp_now = int(now().timestamp())
         try:
@@ -510,7 +513,8 @@ def fetch_cached_price(source, symbol, date):
             # aware datetime objects cannot be serialized properly due to bug.)
             if result_naive.time is not None:
                 result = result_naive._replace(
-                    time=result_naive.time.replace(tzinfo=tz.tzutc()))
+                    time=result_naive.time.replace(tzinfo=tz.tzutc())
+                )
             else:
                 result = result_naive
 
@@ -519,9 +523,11 @@ def fetch_cached_price(source, symbol, date):
         except KeyError:
             logging.info("Fetching: %s (time: %s)", symbol, time)
             try:
-                result = (source.get_latest_price(symbol)
-                          if time is None else
-                          source.get_historical_price(symbol, time))
+                result = (
+                    source.get_latest_price(symbol)
+                    if time is None
+                    else source.get_historical_price(symbol, time)
+                )
             except ValueError as exc:
                 logging.error("Error fetching %s: %s", symbol, exc)
                 result = None
@@ -550,17 +556,16 @@ def setup_cache(cache_filename: Optional[str], clear_cache: bool):
     if not cache_filename:
         return
 
-    logging.info('Using price cache at "%s" (with indefinite expiration)',
-                 cache_filename)
+    logging.info('Using price cache at "%s" (with indefinite expiration)', cache_filename)
 
-    flag = 'c'
+    flag = "c"
     if clear_cache and cache_filename:
         logging.info("Clearing cache %s*", cache_filename)
-        flag = 'n'
+        flag = "n"
 
     global _CACHE
     _CACHE = shelve.open(cache_filename, flag=flag)
-    _CACHE.expiration = DEFAULT_EXPIRATION # type: ignore
+    _CACHE.expiration = DEFAULT_EXPIRATION  # type: ignore
 
 
 def reset_cache():
@@ -604,10 +609,10 @@ def fetch_price(dprice: DatedPrice, swap_inverted: bool = False) -> Optional[dat
         if swap_inverted:
             base, quote = quote, base
         else:
-            price = ONE/price
+            price = ONE / price
 
     assert base is not None
-    fileloc = data.new_metadata('<{}>'.format(type(psource.module).__name__), 0)
+    fileloc = data.new_metadata("<{}>".format(type(psource.module).__name__), 0)
 
     # The datetime instance is required to be aware. We always convert to the
     # user's timezone before extracting the date. This means that if the market
@@ -621,14 +626,12 @@ def fetch_price(dprice: DatedPrice, swap_inverted: bool = False) -> Optional[dat
         raise ValueError("Time returned by the price source is not timezone aware.")
     date = srctime.astimezone(tz.tzlocal()).date()
 
-    return data.Price(fileloc, date, base,
-                      amount.Amount(price, quote or UNKNOWN_CURRENCY))
+    return data.Price(fileloc, date, base, amount.Amount(price, quote or UNKNOWN_CURRENCY))
 
 
 def filter_redundant_prices(
-        price_entries: List[data.Price],
-        existing_entries: List[data.Price],
-        diffs: bool = False) -> Tuple[List[data.Price], List[data.Price]]:
+    price_entries: List[data.Price], existing_entries: List[data.Price], diffs: bool = False
+) -> Tuple[List[data.Price], List[data.Price]]:
     """Filter out new entries that are redundant from an existing set.
 
     If the price differs, we override it with the new entry only on demand. This
@@ -646,9 +649,11 @@ def filter_redundant_prices(
     # Note: We have to be careful with the dates, because requesting the latest
     # price for a date may yield the price at a previous date. Clobber needs to
     # take this into account. See {1cfa25e37fc1}.
-    existing_prices = {(entry.date, entry.currency): entry
-                       for entry in existing_entries
-                       if isinstance(entry, data.Price)}
+    existing_prices = {
+        (entry.date, entry.currency): entry
+        for entry in existing_entries
+        if isinstance(entry, data.Price)
+    }
     filtered_prices: List[data.Price] = []
     ignored_prices: List[data.Price] = []
     for entry in price_entries:
@@ -679,84 +684,174 @@ def process_args() -> Tuple[Any, List[DatedPrice], List[data.Price], Any]:
     parser = argparse.ArgumentParser(description=beanprice.__doc__.splitlines()[0])
 
     # Input sources or filenames.
-    parser.add_argument('sources', nargs='+', help=(
-        'A list of filenames (or source "module/symbol", if -e is '
-        'specified) from which to create a list of jobs.'))
+    parser.add_argument(
+        "sources",
+        nargs="+",
+        help=(
+            'A list of filenames (or source "module/symbol", if -e is '
+            "specified) from which to create a list of jobs."
+        ),
+    )
 
-    parser.add_argument('-e', '--expressions', '--expression', action='store_true', help=(
-        'Interpret the arguments as "module/symbol" source strings.'))
+    parser.add_argument(
+        "-e",
+        "--expressions",
+        "--expression",
+        action="store_true",
+        help=('Interpret the arguments as "module/symbol" source strings.'),
+    )
 
     # Regular options.
-    parser.add_argument('-v', '--verbose', action='count', help=(
-        "Print out progress log. Specify twice for debugging info."))
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        help=("Print out progress log. Specify twice for debugging info."),
+    )
 
-    parser.add_argument('-d', '--date', action='store',
-                        type=date_utils.parse_date_liberally, help=(
-        "Specify the date for which to fetch the prices."))
+    parser.add_argument(
+        "-d",
+        "--date",
+        action="store",
+        type=date_utils.parse_date_liberally,
+        help=("Specify the date for which to fetch the prices."),
+    )
 
-    parser.add_argument('--update', action='store_true', help=(
-        "Fetch prices from most recent price for each source "
-        "up to present day or specified --date. See also "
-        "--update-rate, --update-compress options."))
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help=(
+            "Fetch prices from most recent price for each source "
+            "up to present day or specified --date. See also "
+            "--update-rate, --update-compress options."
+        ),
+    )
 
-    parser.add_argument('--update-rate', choices=['daily', 'weekday', 'weekly'],
-                        default='weekday', help=(
-        "Specify how often dates are fetched. Options are daily, weekday, or weekly "
-        "(fridays)"))
+    parser.add_argument(
+        "--update-rate",
+        choices=["daily", "weekday", "weekly"],
+        default="weekday",
+        help=(
+            "Specify how often dates are fetched. Options are daily, weekday, or weekly "
+            "(fridays)"
+        ),
+    )
 
-    parser.add_argument('--update-compress', action='store', type=int, default=0, help=(
-        "Specify the number of inactive days to ignore. This option ignored if --inactive "
-        "used."))
+    parser.add_argument(
+        "--update-compress",
+        action="store",
+        type=int,
+        default=0,
+        help=(
+            "Specify the number of inactive days to ignore. This option ignored if "
+            "--inactive used."
+        ),
+    )
 
-    parser.add_argument('-i', '--inactive', action='store_true', help=(
-        "Select all commodities from input files, not just the ones active on the date"))
+    parser.add_argument(
+        "-i",
+        "--inactive",
+        action="store_true",
+        help=(
+            "Select all commodities from input files, not just the ones active on the date"
+        ),
+    )
 
-    parser.add_argument('-u', '--undeclared', action='store_true', help=(
-        "Include commodities viewed in the file even without a "
-        "corresponding Commodity directive, from this default source. "
-        "The currency name itself is used as the lookup symbol in this default source."))
+    parser.add_argument(
+        "-u",
+        "--undeclared",
+        action="store_true",
+        help=(
+            "Include commodities viewed in the file even without a "
+            "corresponding Commodity directive, from this default source. "
+            "The currency name itself is used as the lookup symbol in this default source."
+        ),
+    )
 
-    parser.add_argument('-c', '--clobber', action='store_true', help=(
-        "Do not skip prices which are already present in input files; fetch them anyway."))
+    parser.add_argument(
+        "-c",
+        "--clobber",
+        action="store_true",
+        help=(
+            "Do not skip prices which are already present in input files; "
+            "fetch them anyway."
+        ),
+    )
 
-    parser.add_argument('-a', '--all', action='store_true', help=(
-        "A shorthand for --inactive, --undeclared, --clobber."))
+    parser.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help=("A shorthand for --inactive, --undeclared, --clobber."),
+    )
 
-    parser.add_argument('-s', '--swap-inverted', action='store_true', help=(
-        "For inverted sources, swap currencies instead of inverting the rate. "
-        "For example, if fetching the rate for CAD from 'USD:google/^CURRENCY:USDCAD' "
-        "results in 1.25, by default we would output \"price CAD  0.8000 USD\". "
-        "Using this option we would instead output \" price USD   1.2500 CAD\"."))
+    parser.add_argument(
+        "-s",
+        "--swap-inverted",
+        action="store_true",
+        help=(
+            "For inverted sources, swap currencies instead of inverting the rate. "
+            "For example, if fetching the rate for CAD from 'USD:google/^CURRENCY:USDCAD' "
+            'results in 1.25, by default we would output "price CAD  0.8000 USD". '
+            'Using this option we would instead output " price USD   1.2500 CAD".'
+        ),
+    )
 
-    parser.add_argument('-w', '--workers', action='store', type=int, default=1, help=(
-        "Specify the number of concurrent fetchers."))
+    parser.add_argument(
+        "-w",
+        "--workers",
+        action="store",
+        type=int,
+        default=1,
+        help=("Specify the number of concurrent fetchers."),
+    )
 
-    parser.add_argument('-n', '--dry-run', action='store_true', help=(
-        "Don't actually fetch the prices, just print the list of the ones to be fetched."))
+    parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        help=(
+            "Don't actually fetch the prices, just print the list of the ones "
+            "to be fetched."
+        ),
+    )
 
     # Caching options.
-    cache_group = parser.add_argument_group('cache')
-    cache_filename = path.join(tempfile.gettempdir(),
-                               "{}.cache".format(path.basename(sys.argv[0])))
-    cache_group.add_argument('--cache', dest='cache_filename',
-                             action='store', default=cache_filename,
-                             help="The base filename for the underlying price cache "
-                             "database. An extension may be added to the filename and "
-                             "more than one file may be created.")
-    cache_group.add_argument('--no-cache', dest='cache_filename',
-                             action='store_const', const=None,
-                             help="Disable the price cache.")
-    cache_group.add_argument('--clear-cache', action='store_true',
-                             help="Clear the cache prior to startup.")
+    cache_group = parser.add_argument_group("cache")
+    cache_filename = path.join(
+        tempfile.gettempdir(), "{}.cache".format(path.basename(sys.argv[0]))
+    )
+    cache_group.add_argument(
+        "--cache",
+        dest="cache_filename",
+        action="store",
+        default=cache_filename,
+        help="The base filename for the underlying price cache "
+        "database. An extension may be added to the filename and "
+        "more than one file may be created.",
+    )
+    cache_group.add_argument(
+        "--no-cache",
+        dest="cache_filename",
+        action="store_const",
+        const=None,
+        help="Disable the price cache.",
+    )
+    cache_group.add_argument(
+        "--clear-cache", action="store_true", help="Clear the cache prior to startup."
+    )
 
     args = parser.parse_args()
 
-    verbose_levels = {None: logging.WARN,
-                      0: logging.WARN,
-                      1: logging.INFO,
-                      2: logging.DEBUG}
-    logging.basicConfig(level=verbose_levels[args.verbose],
-                        format='%(levelname)-8s: %(message)s')
+    verbose_levels = {
+        None: logging.WARN,
+        0: logging.WARN,
+        1: logging.INFO,
+        2: logging.DEBUG,
+    }
+    logging.basicConfig(
+        level=verbose_levels[args.verbose], format="%(levelname)-8s: %(message)s"
+    )
 
     if args.undeclared:
         args.undeclared = DEFAULT_SOURCE
@@ -782,52 +877,62 @@ def process_args() -> Tuple[Any, List[DatedPrice], List[data.Price], Any]:
             try:
                 psource_map = parse_source_map(source_str)
             except ValueError:
-                extra = "; did you provide a filename?" if path.exists(source_str) else ''
-                msg = ('Invalid source "{{}}"{}. '.format(extra) +
-                       'Supported format is "CCY:module/SYMBOL"')
+                extra = "; did you provide a filename?" if path.exists(source_str) else ""
+                msg = (
+                    'Invalid source "{{}}"{}. '.format(extra)
+                    + 'Supported format is "CCY:module/SYMBOL"'
+                )
                 parser.error(msg.format(source_str))
             else:
                 for currency, psources in psource_map.items():
                     for date in dates:
-                        jobs.append(DatedPrice(
-                            psources[0].symbol, currency, date, psources))
+                        jobs.append(
+                            DatedPrice(psources[0].symbol, currency, date, psources)
+                        )
     elif args.update:
         # Use Beancount input filename sources to create
         # prices jobs up to present time.
         for filename in args.sources:
             if not path.exists(filename) or not path.isfile(filename):
-                parser.error('File does not exist: "{}"; '
-                             'did you mean to use -e?'.format(filename))
+                parser.error(
+                    'File does not exist: "{}"; ' "did you mean to use -e?".format(filename)
+                )
                 continue
             logging.info('Loading "%s"', filename)
             entries, errors, options_map = loader.load_file(filename, log_errors=sys.stderr)
             if dcontext is None:
-                dcontext = options_map['dcontext']
+                dcontext = options_map["dcontext"]
             if args.date is None:
                 latest_date = datetime.date.today()
             else:
                 latest_date = args.date
-            jobs.extend(get_price_jobs_up_to_date(entries,
-                                                  latest_date,
-                                                  args.inactive,
-                                                  args.undeclared,
-                                                  args.update_rate,
-                                                  args.update_compress))
+            jobs.extend(
+                get_price_jobs_up_to_date(
+                    entries,
+                    latest_date,
+                    args.inactive,
+                    args.undeclared,
+                    args.update_rate,
+                    args.update_compress,
+                )
+            )
             all_entries.extend(entries)
     else:
         # Interpret the arguments as Beancount input filenames.
         for filename in args.sources:
             if not path.exists(filename) or not path.isfile(filename):
-                parser.error('File does not exist: "{}"; '
-                             'did you mean to use -e?'.format(filename))
+                parser.error(
+                    'File does not exist: "{}"; ' "did you mean to use -e?".format(filename)
+                )
                 continue
             logging.info('Loading "%s"', filename)
             entries, errors, options_map = loader.load_file(filename, log_errors=sys.stderr)
             if dcontext is None:
-                dcontext = options_map['dcontext']
+                dcontext = options_map["dcontext"]
             for date in dates:
-                jobs.extend(get_price_jobs_at_date(
-                    entries, date, args.inactive, args.undeclared))
+                jobs.extend(
+                    get_price_jobs_at_date(entries, date, args.inactive, args.undeclared)
+                )
                 all_entries.extend(entries)
 
     return args, jobs, data.sorted(all_entries), dcontext
@@ -844,8 +949,12 @@ def main():
 
     # Fetch all the required prices, processing all the jobs.
     executor = futures.ThreadPoolExecutor(max_workers=args.workers)
-    price_entries = filter(None, executor.map(
-        functools.partial(fetch_price, swap_inverted=args.swap_inverted), jobs))
+    price_entries = filter(
+        None,
+        executor.map(
+            functools.partial(fetch_price, swap_inverted=args.swap_inverted), jobs
+        ),
+    )
 
     # Sort them by currency, regardless of date (the dates should be close
     # anyhow, and we tend to put them in chunks in the input files anyhow).

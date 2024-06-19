@@ -40,9 +40,7 @@ class EastMoneyFundError(ValueError):
     "An error from the EastMoneyFund API."
 
 
-UnsupportTickerError = EastMoneyFundError(
-    "header not match, dont support this ticker type"
-)
+UnsupportTickerError = EastMoneyFundError("header not match, dont support this ticker type")
 
 
 def parse_page(page):
@@ -107,7 +105,6 @@ def get_price_series(
 
 
 class Source(source.Source):
-
     def get_latest_price(self, ticker):
         end_time = datetime.datetime.now(TIMEZONE)
         begin_time = end_time - datetime.timedelta(days=10)

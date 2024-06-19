@@ -30,7 +30,6 @@ def response(contents, status_code=requests.codes.ok):
 
 
 class EastMoneyFundFetcher(unittest.TestCase):
-
     def test_error_network(self):
         with response(None, 404):
             with self.assertRaises(ValueError):
