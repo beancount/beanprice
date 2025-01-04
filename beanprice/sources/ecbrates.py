@@ -16,9 +16,9 @@ from decimal import Decimal, getcontext
 
 import re
 import csv
+from io import StringIO
 from dateutil.tz import tz
 from dateutil.parser import parse
-from io import StringIO
 import requests
 
 from beanprice import source
