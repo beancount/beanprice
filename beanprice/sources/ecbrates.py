@@ -41,21 +41,14 @@ def _parse_ticker(ticker):
             'Invalid ticker. Use "BASE-SYMBOL" format.')
     return match.groups()
 
-def _get_rate_EUR_to_CCY(currency, date):
-    # Temporarily uses fixed precision
-    getcontext().prec = 5
-    
-    # Return consatant rate for EUR
-    if currency == 'EUR':
-        return Decimal('1')
-
+def _get_rate_EUR_to_CCY(currency, date):  
     # Call API
     symbol = f"D.{currency}.EUR.SP00.A"
     params = {
-        "startPeriod": date,
         "endPeriod": date,
         "format": "csvdata",
         "detail": "full",
+        "lastNObservations": 1
         }
     url = f"https://data-api.ecb.europa.eu/service/data/EXR/{symbol}"
     response = requests.get(url, params=params)
@@ -70,29 +63,48 @@ def _get_rate_EUR_to_CCY(currency, date):
         observation = next(results)
     except StopIteration:
         # When there's no data for a given date, an empty string is returned
-        return None
+        return None, None, None
     else:
         # Checking only the first observation and raising errors if there's a date mismatch
         rate = observation.get("OBS_VALUE")
         obs_date = observation.get("TIME_PERIOD")
         decimals = observation.get("DECIMALS")
-        if obs_date != date:
-            raise ECBRatesError(f"Requested rate for {date}, received for {obs_date}")
-        return Decimal(rate)
+        precision = int(decimals) + len(rate.split(".")[0].lstrip("0"))
+        return Decimal(rate), obs_date, precision
 
 def _get_quote(ticker, date):
     base, symbol = _parse_ticker(ticker)
 
-    # Get EUR rates by calling the API 
-    EUR_to_base = _get_rate_EUR_to_CCY(base, date)
-    EUR_to_symbol = _get_rate_EUR_to_CCY(symbol, date)
+    # Get EUR rates by calling the API (or use defaults)
+    if base == symbol:
+        raise ECBRatesError(f"Base currency {base} must be different than symbol currency {symbol}")
+    elif base == 'EUR' and symbol != 'EUR':
+        EUR_to_symbol, symbol_rate_date, symbol_rate_precision = _get_rate_EUR_to_CCY(symbol, date)
+        EUR_to_base = Decimal(1)
+        base_rate_date = symbol_rate_date
+        base_rate_precision = 28
+    elif base != 'EUR' and symbol == 'EUR':
+        EUR_to_base, base_rate_date, base_rate_precision = _get_rate_EUR_to_CCY(base, date)
+        EUR_to_symbol = Decimal(1)
+        symbol_rate_date = base_rate_date
+        symbol_rate_precision = 28
+    else:
+        EUR_to_base, base_rate_date, base_rate_precision = _get_rate_EUR_to_CCY(base, date)
+        EUR_to_symbol, symbol_rate_date, symbol_rate_precision = _get_rate_EUR_to_CCY(symbol, date)
+
+    # Raise error if retrieved subrates for differnt dates 
+    if base_rate_date != symbol_rate_date:
+        raise ECBRatesError(f"Subrates for different dates: ({base}, {base_rate_date}) vs. ({symbol}, {symbol_rate_date})")
 
     # Calculate base -> symbol
     if EUR_to_symbol is None or EUR_to_base is None:
         return None
     else:
+        # Derive precision from sunrates (must be at least 5)
+        minimal_precision = 5
+        getcontext().prec = max(minimal_precision, min(base_rate_precision, symbol_rate_precision))
         price = EUR_to_symbol / EUR_to_base
-        time = parse(date).replace(tzinfo=tz.tzutc())
+        time = parse(base_rate_date).replace(tzinfo=tz.tzutc())
         return source.SourcePrice(price, time, symbol)
 
 
