@@ -83,37 +83,39 @@ def _get_quote(ticker, date):
 
     # Get EUR rates by calling the API (or use defaults)
     if base == "EUR" and symbol != "EUR":
-        EUR_to_symbol, symbol_rate_date, symbol_rate_precision = _get_rate_EUR_to_CCY(
+        eur_to_symbol, symbol_rate_date, symbol_rate_precision = _get_rate_EUR_to_CCY(
             symbol, date
         )
-        EUR_to_base = Decimal(1)
+        eur_to_base = Decimal(1)
         base_rate_date = symbol_rate_date
         base_rate_precision = 28
     elif base != "EUR" and symbol == "EUR":
-        EUR_to_base, base_rate_date, base_rate_precision = _get_rate_EUR_to_CCY(
+        eur_to_base, base_rate_date, base_rate_precision = _get_rate_EUR_to_CCY(
             base, date
         )
-        EUR_to_symbol = Decimal(1)
+        eur_to_symbol = Decimal(1)
         symbol_rate_date = base_rate_date
         symbol_rate_precision = 28
     else:
-        EUR_to_base, base_rate_date, base_rate_precision = _get_rate_EUR_to_CCY(
+        eur_to_base, base_rate_date, base_rate_precision = _get_rate_EUR_to_CCY(
             base, date
         )
-        EUR_to_symbol, symbol_rate_date, symbol_rate_precision = _get_rate_EUR_to_CCY(
+        eur_to_symbol, symbol_rate_date, symbol_rate_precision = _get_rate_EUR_to_CCY(
             symbol, date
         )
 
     # Raise error if retrieved subrates for differnt dates
     if base_rate_date != symbol_rate_date:
         raise ECBRatesError(
-            f"Subrates for different dates: ({base}, {base_rate_date}) vs. ({symbol}, {symbol_rate_date})"
+            f"Subrates for different dates: ({base}, {base_rate_date}) \
+vs. ({symbol}, {symbol_rate_date})"
         )
 
     # Calculate base -> symbol
-    if EUR_to_symbol is None or EUR_to_base is None:
+    if eur_to_symbol is None or eur_to_base is None:
         raise ECBRatesError(
-            f"At least one of the subrates returned None: (EUR{symbol}: {EUR_to_symbol}, EUR{base}: {EUR_to_base})"
+            f"At least one of the subrates returned None: \
+(EUR{symbol}: {eur_to_symbol}, EUR{base}: {eur_to_base})"
         )
 
     # Derive precision from sunrates (must be at least 5)
@@ -121,7 +123,7 @@ def _get_quote(ticker, date):
     getcontext().prec = max(
         minimal_precision, min(base_rate_precision, symbol_rate_precision)
     )
-    price = EUR_to_symbol / EUR_to_base
+    price = eur_to_symbol / eur_to_base
     time = parse(base_rate_date).replace(tzinfo=tz.tzutc())
     return source.SourcePrice(price, time, symbol)
 
