@@ -45,11 +45,12 @@ def _get_rate_EUR_to_CCY(currency, date):
     # Call API
     symbol = f"D.{currency}.EUR.SP00.A"
     params = {
-        "endPeriod": date,
         "format": "csvdata",
         "detail": "full",
         "lastNObservations": 1
         }
+    if date is not None:
+        params["endPeriod"] = date
     url = f"https://data-api.ecb.europa.eu/service/data/EXR/{symbol}"
     response = requests.get(url, params=params)
     if response.status_code != requests.codes.ok:
@@ -98,7 +99,7 @@ def _get_quote(ticker, date):
 
     # Calculate base -> symbol
     if EUR_to_symbol is None or EUR_to_base is None:
-        return None
+        raise ECBRatesError(f"At least one of the subrates returned None: (EUR{symbol}: {EUR_to_symbol}, EUR{base}: {EUR_to_base})")
     else:
         # Derive precision from sunrates (must be at least 5)
         minimal_precision = 5
@@ -111,7 +112,7 @@ def _get_quote(ticker, date):
 class Source(source.Source):
 
     def get_latest_price(self, ticker):
-        return _get_quote(ticker, now().date().isoformat())
+        return _get_quote(ticker, None)
 
     def get_historical_price(self, ticker, time):
         return _get_quote(ticker, time.date().isoformat())
