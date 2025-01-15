@@ -81,8 +81,8 @@ def get_price_series(
         query = {
             "code": ticker,
             "page": page,
-            "sdate": time_begin.astimezone(TIMEZONE).date(),
-            "edate": time_end.astimezone(TIMEZONE).date(),
+            "sdate": time_begin.astimezone(TIMEZONE).date().isoformat(),
+            "edate": time_end.astimezone(TIMEZONE).date().isoformat(),
             "type": "lsjz",
             "per": 30,
         }
