@@ -9,17 +9,16 @@ from beanprice import date_utils
 
 
 class TestDateUtils(unittest.TestCase):
-
     def test_parse_date_liberally(self):
         const_date = datetime.date(2014, 12, 7)
         test_cases = (
-            ('12/7/2014',),
-            ('7-Dec-2014',),
-            ('7/12/2014', {'parserinfo': dateutil.parser.parserinfo(dayfirst=True)}),
-            ('12/7', {'default': datetime.datetime(2014, 1, 1)}),
-            ('7.12.2014', {'dayfirst': True}),
-            ('14 12 7', {'yearfirst': True}),
-            ('Transaction of 7th December 2014', {'fuzzy': True}),
+            ("12/7/2014",),
+            ("7-Dec-2014",),
+            ("7/12/2014", {"parserinfo": dateutil.parser.parserinfo(dayfirst=True)}),
+            ("12/7", {"default": datetime.datetime(2014, 1, 1)}),
+            ("7.12.2014", {"dayfirst": True}),
+            ("14 12 7", {"yearfirst": True}),
+            ("Transaction of 7th December 2014", {"fuzzy": True}),
         )
         for case in test_cases:
             if len(case) == 2:
@@ -40,5 +39,5 @@ class TestDateUtils(unittest.TestCase):
         self.assertNotEqual(now_tokyo, now_nyc)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

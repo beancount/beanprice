@@ -32,7 +32,8 @@ CURRENT_DATA = (
     "Jul 14. 2020, 21.2898, 10.1398, 34.5110, 10.1829, 37.8542, 10.2115,"
     " 22.0301, 10.2651, 10.2651, 10.2652, 16.4515, 21.0608, 47.2391, 53.8560, 30.0643\n"
     "Jul 15. 2020, 21.3513, 10.2067, 34.7862, 10.2723, 38.2174, 10.3170,"
-    " 22.2736, 10.4025, 10.4026, 10.4027, 16.4519, 21.0574, 47.6702, 55.2910, 30.4751")
+    " 22.2736, 10.4025, 10.4026, 10.4027, 16.4519, 21.0574, 47.6702, 55.2910, 30.4751"
+)
 
 
 HISTORIC_DATA = (
@@ -59,7 +60,8 @@ HISTORIC_DATA = (
     "Jun 18. 2020, 21.1562,, 33.9827,, 37.1713,, 21.5824,,,,"
     "16.4432, 20.8718, 45.9718, 52.9328, 29.3908\n"
     "Jun 19. 2020, 21.1354,, 33.8890,, 37.0491,, 21.5018,,,,"
-    "16.4435, 20.8742, 45.7171, 52.7196, 29.2879")
+    "16.4435, 20.8742, 45.7171, 52.7196, 29.2879"
+)
 
 
 class MockResponse:
@@ -72,63 +74,69 @@ class MockResponse:
     def iter_lines(self, decode_unicode=False):
         return iter(self._content.splitlines())
 
-class TSPFinancePriceFetcher(unittest.TestCase):
 
+class TSPFinancePriceFetcher(unittest.TestCase):
     def test_get_latest_price_L2050(self):
         response = MockResponse(textwrap.dedent(CURRENT_DATA))
-        with mock.patch('requests.get', return_value=response):
-            srcprice = tsp.Source().get_latest_price('L2050')
+        with mock.patch("requests.get", return_value=response):
+            srcprice = tsp.Source().get_latest_price("L2050")
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(Decimal('22.2736'), srcprice.price)
-        timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/New_York')
-        self.assertEqual(datetime.datetime(2020, 7, 15, 16, 0, 0, tzinfo=timezone),
-                         srcprice.time)
-        self.assertEqual('USD', srcprice.quote_currency)
+        self.assertEqual(Decimal("22.2736"), srcprice.price)
+        timezone = datetime.timezone(datetime.timedelta(hours=-4), "America/New_York")
+        self.assertEqual(
+            datetime.datetime(2020, 7, 15, 16, 0, 0, tzinfo=timezone), srcprice.time
+        )
+        self.assertEqual("USD", srcprice.quote_currency)
 
     def test_get_latest_price_SFund(self):
         response = MockResponse(textwrap.dedent(CURRENT_DATA))
-        with mock.patch('requests.get', return_value=response):
-            srcprice = tsp.Source().get_latest_price('SFund')
+        with mock.patch("requests.get", return_value=response):
+            srcprice = tsp.Source().get_latest_price("SFund")
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(Decimal('55.2910'), srcprice.price)
-        timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/New_York')
-        self.assertEqual(datetime.datetime(2020, 7, 15, 16, 0, 0, tzinfo=timezone),
-                         srcprice.time)
-        self.assertEqual('USD', srcprice.quote_currency)
+        self.assertEqual(Decimal("55.2910"), srcprice.price)
+        timezone = datetime.timezone(datetime.timedelta(hours=-4), "America/New_York")
+        self.assertEqual(
+            datetime.datetime(2020, 7, 15, 16, 0, 0, tzinfo=timezone), srcprice.time
+        )
+        self.assertEqual("USD", srcprice.quote_currency)
 
     def test_get_historical_price(self):
         response = MockResponse(textwrap.dedent(HISTORIC_DATA))
-        with mock.patch('requests.get', return_value=response):
+        with mock.patch("requests.get", return_value=response):
             srcprice = tsp.Source().get_historical_price(
-                'CFund', time=datetime.datetime(2020, 6, 19))
+                "CFund", time=datetime.datetime(2020, 6, 19)
+            )
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(Decimal('45.7171'), srcprice.price)
-        timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/New_York')
-        self.assertEqual(datetime.datetime(2020, 6, 19, 16, 0, 0, tzinfo=timezone),
-                         srcprice.time)
-        self.assertEqual('USD', srcprice.quote_currency)
+        self.assertEqual(Decimal("45.7171"), srcprice.price)
+        timezone = datetime.timezone(datetime.timedelta(hours=-4), "America/New_York")
+        self.assertEqual(
+            datetime.datetime(2020, 6, 19, 16, 0, 0, tzinfo=timezone), srcprice.time
+        )
+        self.assertEqual("USD", srcprice.quote_currency)
 
     def test_get_historical_price_L2060(self):
         # This fund did not exist until 01 Jul 2020. Ensuring we get a Decimal(0.0) back.
         response = MockResponse(textwrap.dedent(HISTORIC_DATA))
-        with mock.patch('requests.get', return_value=response):
+        with mock.patch("requests.get", return_value=response):
             srcprice = tsp.Source().get_historical_price(
-                'L2060', time=datetime.datetime(2020, 6, 19))
+                "L2060", time=datetime.datetime(2020, 6, 19)
+            )
         self.assertTrue(isinstance(srcprice.price, Decimal))
-        self.assertEqual(Decimal('0.0'), srcprice.price)
-        timezone = datetime.timezone(datetime.timedelta(hours=-4), 'America/New_York')
-        self.assertEqual(datetime.datetime(2020, 6, 19, 16, 0, 0, tzinfo=timezone),
-                         srcprice.time)
-        self.assertEqual('USD', srcprice.quote_currency)
+        self.assertEqual(Decimal("0.0"), srcprice.price)
+        timezone = datetime.timezone(datetime.timedelta(hours=-4), "America/New_York")
+        self.assertEqual(
+            datetime.datetime(2020, 6, 19, 16, 0, 0, tzinfo=timezone), srcprice.time
+        )
+        self.assertEqual("USD", srcprice.quote_currency)
 
     def test_invalid_fund_latest(self):
         with self.assertRaises(tsp.TSPError):
-            tsp.Source().get_latest_price('InvalidFund')
+            tsp.Source().get_latest_price("InvalidFund")
 
     def test_invalid_fund_historical(self):
         with self.assertRaises(tsp.TSPError):
-            tsp.Source().get_historical_price('InvalidFund', time=datetime.datetime.now())
+            tsp.Source().get_historical_price("InvalidFund", time=datetime.datetime.now())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

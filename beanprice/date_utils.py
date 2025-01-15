@@ -1,5 +1,5 @@
-"""Date utilities.
-"""
+"""Date utilities."""
+
 __copyright__ = "Copyright (C) 2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
@@ -39,14 +39,14 @@ def intimezone(tz_value: str):
     Returns:
       A contextmanager in the given timezone locale.
     """
-    tz_old = os.environ.get('TZ', None)
-    os.environ['TZ'] = tz_value
+    tz_old = os.environ.get("TZ", None)
+    os.environ["TZ"] = tz_value
     time.tzset()
     try:
         yield
     finally:
         if tz_old is None:
-            del os.environ['TZ']
+            del os.environ["TZ"]
         else:
-            os.environ['TZ'] = tz_old
+            os.environ["TZ"] = tz_old
         time.tzset()

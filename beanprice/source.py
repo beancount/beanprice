@@ -8,6 +8,7 @@ indication of why fetching failed and leave the responsibility to the caller to
 decide whether to share this with the user or to ignore and continue with other
 sources.
 """
+
 __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
@@ -25,10 +26,14 @@ from typing import List, Optional, NamedTuple
 #     used to compute a corresponding date in the user's timezone.
 #   quote-currency: A string, the quote currency of the given price, if
 #     available.
-SourcePrice = NamedTuple('SourcePrice',
-                         [('price', Decimal),
-                          ('time', Optional[datetime.datetime]),
-                          ('quote_currency', Optional[str])])
+SourcePrice = NamedTuple(
+    "SourcePrice",
+    [
+        ("price", Decimal),
+        ("time", Optional[datetime.datetime]),
+        ("quote_currency", Optional[str]),
+    ],
+)
 
 
 class Source:
@@ -67,8 +72,9 @@ class Source:
           A SourcePrice instance, or None if we failed to fetch.
         """
 
-    def get_historical_price(self, ticker: str,
-                             time: datetime.datetime) -> Optional[SourcePrice]:
+    def get_historical_price(
+        self, ticker: str, time: datetime.datetime
+    ) -> Optional[SourcePrice]:
         """Return the lastest historical price found for the symbol at the given date.
 
         This could be the price of the close of the day, for instance. We assume
@@ -85,9 +91,9 @@ class Source:
           A SourcePrice instance, or None if we failed to fetch.
         """
 
-    def get_prices_series(self, ticker: str,
-                          time_begin: datetime.datetime,
-                          time_end: datetime.datetime) -> Optional[List[SourcePrice]]:
+    def get_prices_series(
+        self, ticker: str, time_begin: datetime.datetime, time_end: datetime.datetime
+    ) -> Optional[List[SourcePrice]]:
         """Return the historical daily price series between two dates.
 
         Note that weekends don't have any prices, so there's no guarantee that

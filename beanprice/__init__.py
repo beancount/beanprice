@@ -88,7 +88,7 @@ Beancount input file:
   some other commodity in the past (i.e., for currencies).
 
 - The list of all Commodity directives present in the file. For each of those
-  holdings, the corresponding Commodity directive is consulted and its "ticker"
+  holdings, the corresponding Commodity directive is consulted and its "price"
   metadata field is used to specify where to attempt to fetch prices. You should
   have directives like this in your input file:
 
@@ -137,5 +137,6 @@ differ in their support. For example, Google Finance does not support fetching
 historical data for its CURRENCY:* instruments.
 
 """
+
 __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
