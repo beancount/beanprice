@@ -80,11 +80,11 @@ def get_price_series(
     for page in range(1, pages + 1):
         query = {
             "code": ticker,
-            "page": page,
-            "sdate": time_begin.astimezone(TIMEZONE).date(),
-            "edate": time_end.astimezone(TIMEZONE).date(),
+            "page": str(page),
+            "sdate": time_begin.astimezone(TIMEZONE).date().isoformat(),
+            "edate": time_end.astimezone(TIMEZONE).date().isoformat(),
             "type": "lsjz",
-            "per": 30,
+            "per": str(30),
         }
         response = requests.get(base_url, params=query, headers=headers)
         if response.status_code != requests.codes.ok:
