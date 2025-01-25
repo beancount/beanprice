@@ -5,14 +5,12 @@ from decimal import Decimal
 from unittest import mock
 from dateutil import tz
 
-import pytest
 import requests
 
 from beanprice import source
 from beanprice.sources import coincap
 
 timezone = tz.gettz("Europe/Amsterdam")
-
 
 response_assets_bitcoin_historical = {
     "data": [
@@ -111,34 +109,40 @@ class Source(unittest.TestCase):
             self.assertIsInstance(srcprice, source.SourcePrice)
             self.assertEqual(Decimal("60748.3135183678858890"), srcprice.price)
             self.assertEqual(
-                datetime.datetime(2021, 4, 12).replace(tzinfo=datetime.timezone.utc).date(),
+                datetime.datetime(2021, 4, 12)
+                .replace(tzinfo=datetime.timezone.utc)
+                .date(),
                 srcprice.time.date(),
             )
             self.assertEqual("USD", srcprice.quote_currency)
 
-    @pytest.mark.skip(reason="Query function should take into account the timezone.")
     def test_get_historical_price(self):
         with response(content=response_assets_bitcoin_historical):
             srcprice = coincap.Source().get_historical_price(
-                "bitcoin", datetime.datetime(2021, 1, 6)
+                "bitcoin", datetime.datetime(2021, 1, 6).replace(tzinfo=timezone)
             )
             self.assertEqual(Decimal("34869.7692419204775049"), srcprice.price)
             self.assertEqual(
-                datetime.datetime(2021, 1, 6).replace(tzinfo=datetime.timezone.utc).date(),
+                datetime.datetime(2021, 1, 6)
+                .replace(tzinfo=datetime.timezone.utc)
+                .date(),
                 srcprice.time.date(),
             )
             self.assertEqual("USD", srcprice.quote_currency)
 
-    @pytest.mark.skip(reason="Query function should take into account the timezone.")
     def test_get_prices_series(self):
         with response(content=response_bitcoin_history):
             srcprices = coincap.Source().get_prices_series(
-                "bitcoin", datetime.datetime(2021, 1, 1), datetime.datetime(2021, 3, 20)
+                "bitcoin",
+                datetime.datetime(2021, 1, 1).replace(tzinfo=timezone),
+                datetime.datetime(2021, 3, 20).replace(tzinfo=timezone),
             )
             self.assertEqual(len(srcprices), 8)
             self.assertEqual(Decimal("29232.6707650537687673"), srcprices[0].price)
             self.assertEqual(
-                datetime.datetime(2021, 1, 1).replace(tzinfo=datetime.timezone.utc).date(),
+                datetime.datetime(2021, 1, 1)
+                .replace(tzinfo=datetime.timezone.utc)
+                .date(),
                 srcprices[0].time.date(),
             )
             self.assertEqual("USD", srcprices[0].quote_currency)
