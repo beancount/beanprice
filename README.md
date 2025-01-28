@@ -87,7 +87,7 @@ pylint beanprice
 Type checker:
 
 ```
-mypy beanprice --ignore-missing-imports
+mypy beanprice
 ```
 
 ## Copyright and License
