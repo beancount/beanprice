@@ -676,7 +676,7 @@ def process_args() -> Tuple[
     argparse.Namespace,
     List[DatedPrice],
     data.Directives,
-    Any | None,
+    Optional[Any],
 ]:
     """Process the arguments. This also initializes the logging module.
 
