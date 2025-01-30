@@ -83,3 +83,6 @@ ignore = [
     'UP007',
     'UP032',
 ]
+
+[tool.mypy]
+disable_error_code = ["import-untyped"]

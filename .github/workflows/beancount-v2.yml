@@ -16,4 +16,4 @@ jobs:
       - run: pip install -r requirements_dev.txt
       - run: pylint beanprice
       - run: pytest beanprice
-      - run: mypy beanprice --ignore-missing-imports
+      - run: mypy beanprice

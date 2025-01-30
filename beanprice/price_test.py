@@ -412,7 +412,7 @@ class TestParseSourceMap(unittest.TestCase):
         )
 
     def test_source_map_manycur_single(self):
-        smap = price.parse_source_map("USD:yahoo/USDCAD " "CAD:yahoo/CAD=X")
+        smap = price.parse_source_map("USD:yahoo/USDCAD CAD:yahoo/CAD=X")
         self.assertEqual(
             {
                 "USD": [PS("beanprice.sources.yahoo", "USDCAD", False)],
@@ -422,7 +422,7 @@ class TestParseSourceMap(unittest.TestCase):
         )
 
     def test_source_map_manycur_multiple(self):
-        smap = price.parse_source_map("USD:yahoo/GBPUSD,oanda/GBPUSD " "CAD:yahoo/GBPCAD")
+        smap = price.parse_source_map("USD:yahoo/GBPUSD,oanda/GBPUSD CAD:yahoo/GBPCAD")
         self.assertEqual(
             {
                 "USD": [
