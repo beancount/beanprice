@@ -46,5 +46,5 @@ setup(
             "bean-price = beanprice.price:main",
         ]
     },
-    python_requires=">=3.5",
+    python_requires=">=3.9",
 )
