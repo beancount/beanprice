@@ -16,6 +16,16 @@ from beanprice import source
 
 cet = ZoneInfo("CET")
 
+REGEX_PATTERN = (r"^'?(\d\d)\/(\d\d)\/(\d\d\d\d);"
+    r"'?(\d+.?\d+);"
+    r"'?\d+.?\d+;"
+    r"'?\d+.?\d+;"
+    r"'?\d+.?\d+;"
+    r"'?\d+.?\d+;"
+    r"'?\d+;"
+    r"'?\d+;"
+    r"'?\d+;"
+    r"('?\d+(.\d+)?)?$")
 
 class EuronextError(ValueError):
     "Prices could not be fetched"
@@ -36,7 +46,6 @@ queried_ranges: List[Tuple[datetime.datetime, datetime.datetime]] = []
 def known_prices_key(ticker: str, date: datetime.date) -> str:
     return ticker + "__" + date.isoformat()
 
-
 def date_to_exchange_time(date: datetime.date) -> datetime.datetime:
     # We do not obtain times for the fetching. Since this is a European
     # source, take an early time as a good-enough solution. This way, any
@@ -44,6 +53,21 @@ def date_to_exchange_time(date: datetime.date) -> datetime.datetime:
     # times may vary), while we are unlikely to obtain tomorrows price.
     return datetime.datetime(date.year, date.month, date.day, 5, 0, tzinfo=cet)
 
+def parse_ticker_line(line: str) -> Optional[source.SourcePrice]:
+    if not line:
+        return None
+    match_result = re.search(REGEX_PATTERN, line)
+    if match_result is None:
+        raise EuronextError("could not parse response")
+    date = datetime.date(
+        int(match_result.group(3)),
+        int(match_result.group(2)),
+        int(match_result.group(1)),
+    )
+    price = Decimal(match_result.group(4))
+
+    date_with_time = date_to_exchange_time(date)
+    return source.SourcePrice(price, date_with_time, "EUR")
 
 def read_csv(contents: str, ticker: str):
     lines = contents.splitlines()
@@ -75,34 +99,9 @@ def read_csv(contents: str, ticker: str):
 
     # Parse included dates
     for line in lines[4:]:
-        if not line:
-            continue
-        match_result = re.search(
-            r"^'?(\d\d)\/(\d\d)\/(\d\d\d\d);"
-            r"'?(\d+.?\d+);"
-            r"'?\d+.?\d+;"
-            r"'?\d+.?\d+;"
-            r"'?\d+.?\d+;"
-            r"'?\d+.?\d+;"
-            r"'?\d+;"
-            r"'?\d+;"
-            r"'?\d+;"
-            r"('?\d+.?\d+)?$",
-            line,
-        )
-        if match_result is None:
-            raise EuronextError("could not parse response")
-        date = datetime.date(
-            int(match_result.group(3)),
-            int(match_result.group(2)),
-            int(match_result.group(1)),
-        )
-        price = Decimal(match_result.group(4))
-
-        date_with_time = date_to_exchange_time(date)
-        sourceprice = source.SourcePrice(price, date_with_time, "EUR")
-        known_prices[ticker].append(sourceprice)
-
+        sourceprice = parse_ticker_line(line)
+        if not sourceprice is None:
+            known_prices[ticker].append(sourceprice)
 
 class Source(source.Source):
     "Euronext price source."
