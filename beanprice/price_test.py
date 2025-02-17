@@ -242,8 +242,9 @@ class TestProcessArguments(unittest.TestCase):
                     "--no-cache",
                     "-e",
                     "USD:yahoo/AAPL",
-                    "--date-range",
+                    "--date-from",
                     "2023-01-02",
+                    "--date-to",
                     "2023-01-04",
                 ],
             )

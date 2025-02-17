@@ -585,7 +585,7 @@ def setup_cache(cache_filename: Optional[str], clear_cache: bool):
 def reset_cache():
     """Reset the cache to its uninitialized state."""
     global _CACHE
-    if _CACHE is not None:
+    if (_CACHE is not None):
         _CACHE.close()
     _CACHE = None
 
@@ -737,10 +737,13 @@ def process_args() -> Tuple[
     )
 
     parser.add_argument(
-        "--date-range",
-        nargs=2,
-        type=date_utils.parse_date_liberally,
-        help="Specify a date range (start end) for which to fetch the prices.",
+        "--date-from",
+        help="Starting date for price fetching.",
+    )
+
+    parser.add_argument(
+        "--date-to",
+        help="Ending date for price fetching.",
     )
 
     parser.add_argument(
@@ -897,8 +900,9 @@ def process_args() -> Tuple[
     all_entries = []
     dcontext = None
 
-    if args.date_range:
-        start_date, end_date = args.date_range
+    if args.date_from:
+        start_date = date_utils.parse_date_liberally(args.date_from)
+        end_date = date_utils.parse_date_liberally(args.date_to) if args.date_to else datetime.date.today()
         dates = []
         current_date = start_date
         while current_date <= end_date:
