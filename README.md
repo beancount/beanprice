@@ -50,6 +50,19 @@ bean-price --update ledger.beancount
 
 For more detailed guide for price fetching, read <https://beancount.github.io/docs/fetching_prices_in_beancount.html>.
 
+## Examples
+
+Here are some commands you can try:
+
+1. Fetch the latest prices for a single commodity:
+   ```
+   bean-price --no-cache -e "USD:yahoo/MSFT"
+   ```
+
+2. Fetch historical prices within a date range:
+   ```
+   bean-price --no-cache -e "USD:yahoo/GOOG" --date-from 2023-01-03 --date-to 2023-01-05
+   ```
 
 ## Price source info
 The following price sources are available:
