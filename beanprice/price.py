@@ -1001,6 +1001,16 @@ def main():
         # with single date bean-price output.
         price_entries = sorted(price_entries, key=lambda e: e.date)
 
+    # Filter out repeated (currency, date) entries (e.g. to catch public holidays).
+    unique_entries = []
+    seen_dates = set()
+    for p in price_entries:
+        key = (p.currency, p.date)
+        if key not in seen_dates:
+            seen_dates.add(key)
+            unique_entries.append(p)
+    price_entries = unique_entries
+
     # Avoid clobber, remove redundant entries.
     if not args.clobber:
         price_entries, ignored_entries = filter_redundant_prices(price_entries, entries)
