@@ -330,9 +330,11 @@ def get_price_jobs_at_date(
 
         # If there are no sources, create a default one.
         if not psources:
-            psources = [PriceSource(default_source, base, False)]
+            psources = (PriceSource(default_source, base, False),)
+        else:
+            psources = tuple(psources)
 
-        jobs.append(DatedPrice(base, quote, date, psources))
+        jobs.append(DatedPrice(base, quote, date, list(psources)))
     return sorted(jobs)
 
 
@@ -455,9 +457,11 @@ def get_price_jobs_up_to_date(
         date, base, quote = key
         psources = currency_map.get((base, quote), None)
         if not psources:
-            psources = [PriceSource(default_source, base, False)]
+            psources = (PriceSource(default_source, base, False),)
+        else:
+            psources = tuple(psources)
 
-        jobs.append(DatedPrice(base, quote, date, psources))
+        jobs.append(DatedPrice(base, quote, date, list(psources)))
 
     return sorted(jobs)
 
@@ -506,8 +510,13 @@ def fetch_cached_price(source, symbol, date):
         md5.update(str((type(source).__module__, symbol, date)).encode("utf-8"))
         key = md5.hexdigest()
         timestamp_now = int(now().timestamp())
+        
+        # Open the cache here
+        cache = shelve.open(_CACHE.filename, flag='c')
+        cache.expiration = _CACHE.expiration
+        
         try:
-            timestamp_created, result_naive = _CACHE[key]
+            timestamp_created, result_naive = cache[key]
 
             # Convert naive timezone to UTC, which is what the cache is always
             # assumed to store. (The reason for this is that timezones from
@@ -519,7 +528,7 @@ def fetch_cached_price(source, symbol, date):
             else:
                 result = result_naive
 
-            if (timestamp_now - timestamp_created) > _CACHE.expiration.total_seconds():
+            if (timestamp_now - timestamp_created) > cache.expiration.total_seconds():
                 raise KeyError
         except KeyError:
             logging.info("Fetching: %s (time: %s)", symbol, time)
@@ -542,7 +551,10 @@ def fetch_cached_price(source, symbol, date):
                 result_naive = result
 
             if result_naive is not None:
-                _CACHE[key] = (timestamp_now, result_naive)
+                cache[key] = (timestamp_now, result_naive)
+        finally:
+            # Close the cache here
+            cache.close()
     return result
 
 
@@ -566,13 +578,14 @@ def setup_cache(cache_filename: Optional[str], clear_cache: bool):
 
     global _CACHE
     _CACHE = shelve.open(cache_filename, flag=flag)  # type: ignore
+    _CACHE.filename = cache_filename # type: ignore
     _CACHE.expiration = DEFAULT_EXPIRATION  # type: ignore
 
 
 def reset_cache():
     """Reset the cache to its uninitialized state."""
     global _CACHE
-    if _CACHE is not None:
+    if (_CACHE is not None):
         _CACHE.close()
     _CACHE = None
 
@@ -721,6 +734,16 @@ def process_args() -> Tuple[
         action="store",
         type=date_utils.parse_date_liberally,
         help=("Specify the date for which to fetch the prices."),
+    )
+
+    parser.add_argument(
+        "--date-from",
+        help="Starting date for price fetching.",
+    )
+
+    parser.add_argument(
+        "--date-to",
+        help="Ending date for price fetching.",
     )
 
     parser.add_argument(
@@ -876,8 +899,21 @@ def process_args() -> Tuple[
     jobs = []
     all_entries = []
     dcontext = None
+
+    if args.date_from:
+        start_date = date_utils.parse_date_liberally(args.date_from)
+        end_date = date_utils.parse_date_liberally(args.date_to) if args.date_to else datetime.date.today()
+        dates = []
+        current_date = start_date
+        while current_date <= end_date:
+            if current_date.weekday() < 5:  # Skip weekends (Saturday=5, Sunday=6)
+                dates.append(current_date)
+            current_date += datetime.timedelta(days=1)
+        logging.info("Processing date range: %s to %s", start_date, end_date)
+
     if args.expressions:
         # Interpret the arguments as price sources.
+        jobs_set = set()  # Use a set to avoid duplicates
         for source_str in args.sources:
             psources: List[PriceSource] = []
             try:
@@ -892,9 +928,8 @@ def process_args() -> Tuple[
             else:
                 for currency, psources in psource_map.items():
                     for date in dates:
-                        jobs.append(
-                            DatedPrice(psources[0].symbol, currency, date, psources)
-                        )
+                        jobs_set.add(DatedPrice(psources[0].symbol, currency, date, tuple(psources)))
+        jobs = sorted(jobs_set)
     elif args.update:
         # Use Beancount input filename sources to create
         # prices jobs up to present time.
@@ -969,6 +1004,16 @@ def main():
         # Sort additionally by date, to have an output consistent
         # with single date bean-price output.
         price_entries = sorted(price_entries, key=lambda e: e.date)
+
+    # Filter out repeated (currency, date) entries (e.g. to catch public holidays).
+    unique_entries = []
+    seen_dates = set()
+    for p in price_entries:
+        key = (p.currency, p.date)
+        if key not in seen_dates:
+            seen_dates.add(key)
+            unique_entries.append(p)
+    price_entries = unique_entries
 
     # Avoid clobber, remove redundant entries.
     if not args.clobber:
