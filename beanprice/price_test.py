@@ -234,6 +234,32 @@ class TestProcessArguments(unittest.TestCase):
                 jobs,
             )
 
+    def test_expressions_date_range(self):
+        with test_utils.capture("stderr"):
+            args, jobs, _, __ = run_with_args(
+                price.process_args,
+                [
+                    "--no-cache",
+                    "-e",
+                    "USD:yahoo/AAPL",
+                    "--date-range",
+                    "2023-01-01",
+                    "2023-01-03",
+                ],
+            )
+            expected_dates = [
+                datetime.date(2023, 1, 1),
+                datetime.date(2023, 1, 2),
+                datetime.date(2023, 1, 3),
+            ]
+            expected_jobs = [
+                price.DatedPrice(
+                    "AAPL", "USD", date, [price.PriceSource(yahoo, "AAPL", False)]
+                )
+                for date in expected_dates
+            ]
+            self.assertEqual(expected_jobs, jobs)
+
 
 class TestClobber(cmptest.TestCase):
     @loader.load_doc()
