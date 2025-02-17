@@ -330,9 +330,11 @@ def get_price_jobs_at_date(
 
         # If there are no sources, create a default one.
         if not psources:
-            psources = [PriceSource(default_source, base, False)]
+            psources = (PriceSource(default_source, base, False),)  # Create as tuple
+        else:
+            psources = tuple(psources)  # Convert list to tuple
 
-        jobs.append(DatedPrice(base, quote, date, psources))
+        jobs.append(DatedPrice(base, quote, date, list(psources)))
     return sorted(jobs)
 
 
@@ -455,9 +457,11 @@ def get_price_jobs_up_to_date(
         date, base, quote = key
         psources = currency_map.get((base, quote), None)
         if not psources:
-            psources = [PriceSource(default_source, base, False)]
+            psources = (PriceSource(default_source, base, False),)  # Create as tuple
+        else:
+            psources = tuple(psources)  # Convert list to tuple
 
-        jobs.append(DatedPrice(base, quote, date, psources))
+        jobs.append(DatedPrice(base, quote, date, list(psources)))
 
     return sorted(jobs)
 
@@ -921,8 +925,7 @@ def process_args() -> Tuple[
                 for currency, psources in psource_map.items():
                     for date in dates:
                         jobs_set.add(DatedPrice(psources[0].symbol, currency, date, tuple(psources)))
-
-        jobs = sorted(list(jobs_set))  # Convert set to sorted list
+        jobs = sorted(jobs_set)
     elif args.update:
         # Use Beancount input filename sources to create
         # prices jobs up to present time.
@@ -1003,6 +1006,7 @@ def main():
         price_entries, ignored_entries = filter_redundant_prices(price_entries, entries)
         for entry in ignored_entries:
             logging.info("Ignored to avoid clobber: %s %s", entry.date, entry.currency)
+
 
     # Print out the entries.
     printer.print_entries(price_entries, dcontext=dcontext)

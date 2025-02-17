@@ -228,7 +228,7 @@ class TestProcessArguments(unittest.TestCase):
             self.assertEqual(
                 [
                     price.DatedPrice(
-                        "AAPL", "USD", None, [price.PriceSource(yahoo, "AAPL", False)]
+                        "AAPL", "USD", None, (price.PriceSource(yahoo, "AAPL", False),)
                     )
                 ],
                 jobs,
@@ -243,18 +243,18 @@ class TestProcessArguments(unittest.TestCase):
                     "-e",
                     "USD:yahoo/AAPL",
                     "--date-range",
-                    "2023-01-01",
-                    "2023-01-03",
+                    "2023-01-02",
+                    "2023-01-04",
                 ],
             )
             expected_dates = [
-                datetime.date(2023, 1, 1),
                 datetime.date(2023, 1, 2),
                 datetime.date(2023, 1, 3),
+                datetime.date(2023, 1, 4),
             ]
             expected_jobs = [
                 price.DatedPrice(
-                    "AAPL", "USD", date, [price.PriceSource(yahoo, "AAPL", False)]
+                    "AAPL", "USD", date, (price.PriceSource(yahoo, "AAPL", False),)
                 )
                 for date in expected_dates
             ]
