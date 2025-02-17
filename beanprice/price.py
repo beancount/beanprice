@@ -1017,6 +1017,5 @@ def main():
         for entry in ignored_entries:
             logging.info("Ignored to avoid clobber: %s %s", entry.date, entry.currency)
 
-
     # Print out the entries.
     printer.print_entries(price_entries, dcontext=dcontext)
