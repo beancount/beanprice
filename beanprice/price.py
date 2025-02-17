@@ -330,9 +330,9 @@ def get_price_jobs_at_date(
 
         # If there are no sources, create a default one.
         if not psources:
-            psources = (PriceSource(default_source, base, False),)  # Create as tuple
+            psources = (PriceSource(default_source, base, False),)
         else:
-            psources = tuple(psources)  # Convert list to tuple
+            psources = tuple(psources)
 
         jobs.append(DatedPrice(base, quote, date, list(psources)))
     return sorted(jobs)
@@ -457,9 +457,9 @@ def get_price_jobs_up_to_date(
         date, base, quote = key
         psources = currency_map.get((base, quote), None)
         if not psources:
-            psources = (PriceSource(default_source, base, False),)  # Create as tuple
+            psources = (PriceSource(default_source, base, False),)
         else:
-            psources = tuple(psources)  # Convert list to tuple
+            psources = tuple(psources)
 
         jobs.append(DatedPrice(base, quote, date, list(psources)))
 
