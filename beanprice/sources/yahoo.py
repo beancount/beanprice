@@ -37,7 +37,10 @@ def parse_response(response: requests.models.Response) -> Dict:
     Raises:
       YahooError: If there is an error in the response.
     """
-    json = response.json(parse_float=Decimal)
+    try:
+      json = response.json(parse_float=Decimal)
+    except Exception as e:
+      raise Exception('{}: {}'.format(str(e), response.text))
     content = next(iter(json.values()))
     if response.status_code != requests.codes.ok:
         raise YahooError("Status {}: {}".format(response.status_code, content["error"]))
@@ -76,6 +79,9 @@ _DEFAULT_PARAMS = {
 }
 
 
+_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0"
+
+
 def get_price_series(
     ticker: str, time_begin: datetime, time_end: datetime
 ) -> Tuple[List[Tuple[datetime, Decimal]], str]:
@@ -90,7 +96,7 @@ def get_price_series(
         "interval": "1d",
     }
     payload.update(_DEFAULT_PARAMS)
-    response = requests.get(url, params=payload, headers={"User-Agent": None})
+    response = requests.get(url, params=payload, headers={"User-Agent": _USER_AGENT})
     result = parse_response(response)
 
     meta = result["meta"]
@@ -126,8 +132,7 @@ class Source(source.Source):
         session = requests.Session()
         session.headers.update(
             {
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) "
-                "Gecko/20100101 Firefox/110.0"
+                "User-Agent": _USER_AGENT
             }
         )
         # This populates the correct cookies in the session
