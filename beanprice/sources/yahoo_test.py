@@ -8,7 +8,6 @@ import unittest
 from decimal import Decimal
 from unittest import mock
 
-import pytest
 from dateutil import tz
 import requests
 

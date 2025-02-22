@@ -134,7 +134,9 @@ class Source(source.Source):
         )
         # This populates the correct cookies in the session
         self.session.get("https://fc.yahoo.com")
-        self.crumb = self.session.get("https://query1.finance.yahoo.com/v1/test/getcrumb").text
+        self.crumb = self.session.get(
+            "https://query1.finance.yahoo.com/v1/test/getcrumb"
+        ).text
 
     def get_latest_price(self, ticker: str) -> Optional[source.SourcePrice]:
         """See contract in beanprice.source.Source."""
@@ -179,7 +181,9 @@ class Source(source.Source):
         """See contract in beanprice.source.Source."""
 
         # Get the latest data returned over the last 5 days.
-        series, currency = get_price_series(ticker, time - timedelta(days=5), time, self.session)
+        series, currency = get_price_series(
+            ticker, time - timedelta(days=5), time, self.session
+        )
         latest = None
         for data_dt, price in sorted(series):
             if data_dt >= time:
