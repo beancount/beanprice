@@ -8,7 +8,6 @@ import unittest
 from decimal import Decimal
 from unittest import mock
 
-import pytest
 from dateutil import tz
 import requests
 
@@ -51,8 +50,9 @@ class YahooFinancePriceFetcher(unittest.TestCase):
                           "tradeable": false}]}}
             """)
         )
-        with mock.patch("requests.get", return_value=response):
-            srcprice = yahoo.Source().get_latest_price("XSP.TO")
+        yahoo_source = yahoo.Source()
+        with mock.patch.object(yahoo_source.session, "get", return_value=response):
+            srcprice = yahoo_source.get_latest_price("XSP.TO")
         self.assertTrue(isinstance(srcprice.price, Decimal))
         self.assertEqual(Decimal("29.99"), srcprice.price)
         timezone = datetime.timezone(datetime.timedelta(hours=-4), "America/Toronto")
@@ -61,7 +61,6 @@ class YahooFinancePriceFetcher(unittest.TestCase):
         )
         self.assertEqual("CAD", srcprice.quote_currency)
 
-    @pytest.mark.skip(reason="The mock.patch() call is incorrect, has not been updated.")
     def test_get_latest_price(self):
         for tzname in "America/New_York", "Europe/Berlin", "Asia/Tokyo":
             with date_utils.intimezone(tzname):
@@ -125,8 +124,9 @@ class YahooFinancePriceFetcher(unittest.TestCase):
                                         1509456600,
                                         1509543000]}]}}""")
         )
-        with mock.patch("requests.get", return_value=response):
-            srcprice = yahoo.Source().get_historical_price(
+        yahoo_source = yahoo.Source()
+        with mock.patch.object(yahoo_source.session, "get", return_value=response):
+            srcprice = yahoo_source.get_historical_price(
                 "XSP.TO", datetime.datetime(2017, 11, 1, 16, 0, 0, tzinfo=tz.tzutc())
             )
         self.assertTrue(isinstance(srcprice.price, Decimal))
@@ -203,8 +203,9 @@ class YahooFinancePriceFetcher(unittest.TestCase):
         """)
         )
         with self.assertRaises(yahoo.YahooError):
-            with mock.patch("requests.get", return_value=response):
-                _ = yahoo.Source().get_historical_price(
+            yahoo_source = yahoo.Source()
+            with mock.patch.object(yahoo_source.session, "get", return_value=response):
+                _ = yahoo_source.get_historical_price(
                     "XSP.TO", datetime.datetime(2017, 11, 1, 16, 0, 0, tzinfo=tz.tzutc())
                 )
 
@@ -241,8 +242,9 @@ class YahooFinancePriceFetcher(unittest.TestCase):
         """)
         )
 
-        with mock.patch("requests.get", return_value=response):
-            srcprice = yahoo.Source().get_historical_price(
+        yahoo_source = yahoo.Source()
+        with mock.patch.object(yahoo_source.session, "get", return_value=response):
+            srcprice = yahoo_source.get_historical_price(
                 "XSP.TO", datetime.datetime(2022, 2, 28, 16, 0, 0, tzinfo=tz.tzutc())
             )
             self.assertTrue(isinstance(srcprice.price, Decimal))

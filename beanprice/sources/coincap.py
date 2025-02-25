@@ -12,10 +12,10 @@ https://docs.coincap.io/
 
 """
 
-import datetime
+from datetime import datetime, timezone, timedelta
 import math
 from decimal import Decimal
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Dict
 import requests
 from beanprice import source
 
@@ -61,27 +61,32 @@ def resolve_currency_id(base_currency: str) -> str:
         base_currency_id = get_currency_id(base_currency)
         if not isinstance(base_currency_id, str):
             raise CoincapError(
-                "Could not find currency id with ticker '" + base_currency + "'"
+                f"Could not find currency id with ticker '{base_currency}'"
             )
         return base_currency_id
     else:
         return base_currency
 
 
-def get_latest_price(base_currency: str) -> Tuple[float, float]:
+def get_latest_price(base_currency: str) -> source.SourcePrice:
+    """
+    Get the latest available price for a given currency.
+    """
     path = "assets/"
-    url = API_BASE_URL + path + resolve_currency_id(base_currency)
+    url = f"{API_BASE_URL}{path}{resolve_currency_id(base_currency)}"
     response = requests.get(url)
     data = response.json()
-    timestamp = data["timestamp"] / 1000.0
-    price_float = data["data"]["priceUsd"]
-    return price_float, timestamp
+    time = datetime.fromtimestamp(data["timestamp"] / 1000.0).replace(
+        tzinfo=timezone.utc
+    )
+    price = Decimal(data["data"]["priceUsd"])
+    return source.SourcePrice(price, time, "USD")
 
 
 def get_price_series(
-    base_currency_id: str, time_begin: datetime.datetime, time_end: datetime.datetime
+    base_currency_id: str, time_begin: datetime, time_end: datetime
 ) -> List[source.SourcePrice]:
-    path = "assets/{}/history".format(base_currency_id)
+    path = f"assets/{base_currency_id}/history"
     params = {
         "interval": "d1",
         "start": str(math.floor(time_begin.timestamp() * 1000.0)),
@@ -92,9 +97,7 @@ def get_price_series(
     return [
         source.SourcePrice(
             Decimal(item["priceUsd"]),
-            datetime.datetime.fromtimestamp(item["time"] / 1000.0).replace(
-                tzinfo=datetime.timezone.utc
-            ),
+            datetime.fromtimestamp(item["time"] / 1000.0).replace(tzinfo=timezone.utc),
             "USD",
         )
         for item in response.json()["data"]
@@ -107,18 +110,15 @@ class Source(source.Source):
     or by their ticker (BTC), in which case the highest ranked coin will be picked."""
 
     def get_latest_price(self, ticker) -> source.SourcePrice:
-        price_float, timestamp = get_latest_price(ticker)
-        price = Decimal(price_float)
-        price_time = datetime.datetime.fromtimestamp(timestamp).replace(
-            tzinfo=datetime.timezone.utc
-        )
-        return source.SourcePrice(price, price_time, "USD")
+        return get_latest_price(ticker)
 
     def get_historical_price(
-        self, ticker: str, time: datetime.datetime
+        self, ticker: str, time: datetime
     ) -> Optional[source.SourcePrice]:
         for datapoint in self.get_prices_series(
-            ticker, time + datetime.timedelta(days=-1), time + datetime.timedelta(days=1)
+            ticker,
+            time + timedelta(days=-1),
+            time + timedelta(days=1),
         ):
             # TODO(blais): This is poorly thought out, the date may not match
             # that in the differing timezone. You probably want the last price
@@ -128,6 +128,6 @@ class Source(source.Source):
         return None
 
     def get_prices_series(
-        self, ticker: str, time_begin: datetime.datetime, time_end: datetime.datetime
+        self, ticker: str, time_begin: datetime, time_end: datetime
     ) -> List[source.SourcePrice]:
         return get_price_series(resolve_currency_id(ticker), time_begin, time_end)

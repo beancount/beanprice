@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="beanprice",
-    version="1.2.2",
+    version="2.0.0",
     description="Price quotes fetcher for Beancount",
     long_description="""
       A script to fetch market data prices from various sources on the internet
@@ -23,7 +23,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         # Beancount library itself.
-        "beancount>=2.3.4",
+        "beancount>=3.0.0",
         # Testing support now uses the pytest module.
         "pytest",
         # This is required to parse dates from command-line options in a

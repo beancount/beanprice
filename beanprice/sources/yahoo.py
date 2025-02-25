@@ -77,7 +77,10 @@ _DEFAULT_PARAMS = {
 
 
 def get_price_series(
-    ticker: str, time_begin: datetime, time_end: datetime
+    ticker: str,
+    time_begin: datetime,
+    time_end: datetime,
+    session: requests.Session,
 ) -> Tuple[List[Tuple[datetime, Decimal]], str]:
     """Return a series of timestamped prices."""
 
@@ -90,7 +93,7 @@ def get_price_series(
         "interval": "1d",
     }
     payload.update(_DEFAULT_PARAMS)
-    response = requests.get(url, params=payload, headers={"User-Agent": None})
+    response = session.get(url, params=payload)  # Use shared session
     result = parse_response(response)
 
     meta = result["meta"]
@@ -120,19 +123,23 @@ def get_price_series(
 class Source(source.Source):
     "Yahoo Finance CSV API price extractor."
 
-    def get_latest_price(self, ticker: str) -> Optional[source.SourcePrice]:
-        """See contract in beanprice.source.Source."""
-
-        session = requests.Session()
-        session.headers.update(
+    def __init__(self):
+        """Initialize a shared session with the required headers and cookies."""
+        self.session = requests.Session()
+        self.session.headers.update(
             {
                 "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) "
                 "Gecko/20100101 Firefox/110.0"
             }
         )
         # This populates the correct cookies in the session
-        session.get("https://fc.yahoo.com")
-        crumb = session.get("https://query1.finance.yahoo.com/v1/test/getcrumb").text
+        self.session.get("https://fc.yahoo.com")
+        self.crumb = self.session.get(
+            "https://query1.finance.yahoo.com/v1/test/getcrumb"
+        ).text
+
+    def get_latest_price(self, ticker: str) -> Optional[source.SourcePrice]:
+        """See contract in beanprice.source.Source."""
 
         url = "https://query1.finance.yahoo.com/v7/finance/quote"
         fields = ["symbol", "regularMarketPrice", "regularMarketTime"]
@@ -140,10 +147,11 @@ class Source(source.Source):
             "symbols": ticker,
             "fields": ",".join(fields),
             "exchange": "NYSE",
-            "crumb": crumb,
+            "crumb": self.crumb,  # Use the session’s crumb
         }
         payload.update(_DEFAULT_PARAMS)
-        response = session.get(url, params=payload)
+        response = self.session.get(url, params=payload)  # Use shared session
+
         try:
             result = parse_response(response)
         except YahooError as error:
@@ -173,7 +181,9 @@ class Source(source.Source):
         """See contract in beanprice.source.Source."""
 
         # Get the latest data returned over the last 5 days.
-        series, currency = get_price_series(ticker, time - timedelta(days=5), time)
+        series, currency = get_price_series(
+            ticker, time - timedelta(days=5), time, self.session
+        )
         latest = None
         for data_dt, price in sorted(series):
             if data_dt >= time:
@@ -188,5 +198,5 @@ class Source(source.Source):
         self, ticker: str, time_begin: datetime, time_end: datetime
     ) -> Optional[List[source.SourcePrice]]:
         """See contract in beanprice.source.Source."""
-        series, currency = get_price_series(ticker, time_begin, time_end)
+        series, currency = get_price_series(ticker, time_begin, time_end, self.session)
         return [source.SourcePrice(price, time, currency) for time, price in series]
