@@ -1,26 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
 py_library(
-    name = "iex",
-    srcs = ["iex.py"],
-    deps = [
-        "//beancount/core:number",
-        "//beancount/prices:source",
-    ],
-)
-
-py_test(
-    name = "iex_test",
-    srcs = ["iex_test.py"],
-    deps = [
-        "//beancount/core:number",
-        "//beancount/prices:source",
-        "//beancount/prices/sources:iex",
-        "//beanprice:date_utils",
-    ],
-)
-
-py_library(
     name = "oanda",
     srcs = ["oanda.py"],
     deps = [
