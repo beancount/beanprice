@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import requests
+from curl_cffi import requests
 
 from beanprice import source
 
@@ -39,7 +39,7 @@ def parse_response(response: requests.models.Response) -> Dict:
     """
     json = response.json(parse_float=Decimal)
     content = next(iter(json.values()))
-    if response.status_code != requests.codes.ok:
+    if response.status_code != 200:
         raise YahooError("Status {}: {}".format(response.status_code, content["error"]))
     if len(json) != 1:
         raise YahooError(
@@ -125,11 +125,14 @@ class Source(source.Source):
 
     def __init__(self):
         """Initialize a shared session with the required headers and cookies."""
-        self.session = requests.Session()
+        self.session = requests.Session(impersonate="chrome")
         self.session.headers.update(
             {
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) "
-                "Gecko/20100101 Firefox/110.0"
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/121.0.0.0 Safari/537.36",
+            "Sec-Ch-Ua": '"Google Chrome";v="121", "Chromium";v="121", ";Not A Brand";v="99"',
+            "Sec-Ch-Ua-Platform": '"Linux"',
             }
         )
         # This populates the correct cookies in the session
