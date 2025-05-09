@@ -978,3 +978,6 @@ def main():
 
     # Print out the entries.
     printer.print_entries(price_entries, dcontext=dcontext)
+
+if __name__ == '__main__':
+    main()
