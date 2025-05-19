@@ -42,8 +42,8 @@ bean-price = 'beanprice.price:main'
 homepage = 'https://github.com/beancount/beanprice'
 issues = 'https://github.com/beancount/beanprice/issues'
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools.packages.find]
+exclude = ["experiments*"]
 
 [tool.coverage.run]
 branch = true
