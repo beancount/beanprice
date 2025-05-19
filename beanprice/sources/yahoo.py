@@ -125,7 +125,6 @@ class Source(source.Source):
 
     def __init__(self):
         """Initialize a shared session with the required headers and cookies."""
-        
         # Using curl_cffi's requests to impersonate a Chrome browser
         # to avoid being blocked by Yahoo's bot detection.
         # See issue https://github.com/beancount/beanprice/issues/106 for more details.
@@ -135,7 +134,8 @@ class Source(source.Source):
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) "
                         "AppleWebKit/537.36 (KHTML, like Gecko) "
                         "Chrome/121.0.0.0 Safari/537.36",
-            "Sec-Ch-Ua": '"Google Chrome";v="121", "Chromium";v="121", ";Not A Brand";v="99"',
+            "Sec-Ch-Ua": '"Google Chrome";v="121", '
+                         '"Chromium";v="121", ";Not A Brand";v="99"',
             "Sec-Ch-Ua-Platform": '"Linux"',
             }
         )
