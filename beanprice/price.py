@@ -560,7 +560,7 @@ def setup_cache(cache_filename: Optional[str], clear_cache: bool):
 
     # Handle switch to diskcache. Check for existing cache file and remove it,
     # so that diskcache can create a directory with the same name.
-    if os.path.exists(cache_filename):
+    if os.path.exists(cache_filename) and os.path.isfile(cache_filename):
         os.remove(cache_filename)
 
     logging.info('Using price cache at "%s" (with indefinite expiration)', cache_filename)
