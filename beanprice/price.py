@@ -8,7 +8,7 @@ import collections
 import datetime
 import functools
 from os import path
-import shelve
+import diskcache
 import tempfile
 import hashlib
 import re
@@ -565,7 +565,7 @@ def setup_cache(cache_filename: Optional[str], clear_cache: bool):
         flag = "n"
 
     global _CACHE
-    _CACHE = shelve.open(cache_filename, flag=flag)  # type: ignore
+    _CACHE = diskcache.Cache(cache_filename, flag=flag)
     _CACHE.expiration = DEFAULT_EXPIRATION  # type: ignore
 
 
