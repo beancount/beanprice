@@ -74,7 +74,7 @@ More price sources can be found at [awesome-beancount.com](https://awesome-beanc
 
 ## Creating a custom price source
 
-To create a price source, create a package (i.e. `my_package`) with a module (i.e. `my_module`) that contains a class which inherits from the beanprice Source class:
+To create a price source, create a package (i.e. `my_package`) with a module (i.e. `my_module`) that contains the Source class which inherits from the `beanprice.Source` class:
 
 ```python
 from beanprice import source
@@ -86,6 +86,7 @@ class Source(source.Source):
   def get_historical_price(self, ticker, time):
     pass
 ```
+Implement the logic for fetching the prices. At a minimum, the `get_latest_price()` is required.
 
 Then use your price source in the commodities
 
@@ -93,6 +94,7 @@ Then use your price source in the commodities
 1900-01-01 commodity XYZ
   price: "AUD:my_package.my_module/XYZ"
 ```
+`AUD` just being an example of a currency specification.
 
 ## Testing
 
