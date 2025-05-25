@@ -43,6 +43,13 @@ bean-price = 'beanprice.price:main'
 homepage = 'https://github.com/beancount/beanprice'
 issues = 'https://github.com/beancount/beanprice/issues'
 
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pylint==3.3.3",
+    "mypy==1.14.1"
+]
+
 [tool.setuptools.packages]
 find = {}
 
