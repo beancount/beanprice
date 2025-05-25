@@ -573,6 +573,8 @@ def reset_cache():
     """Reset the cache to its uninitialized state."""
     global _CACHE
     if _CACHE is not None:
+        if _CACHE.clear is not None:
+            _CACHE.clear()
         _CACHE.close()
     _CACHE = None
 
