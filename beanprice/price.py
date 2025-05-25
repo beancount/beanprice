@@ -8,7 +8,6 @@ import collections
 import datetime
 import functools
 from os import path
-import diskcache
 import tempfile
 import hashlib
 import re
@@ -16,6 +15,7 @@ import sys
 import logging
 from concurrent import futures
 from typing import Any, Dict, List, Optional, NamedTuple, Tuple
+import diskcache
 
 from dateutil import tz
 
