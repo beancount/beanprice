@@ -8,6 +8,7 @@ import collections
 import datetime
 import functools
 from os import path
+import os
 import tempfile
 import hashlib
 import re
@@ -556,6 +557,11 @@ def setup_cache(cache_filename: Optional[str], clear_cache: bool):
     """
     if not cache_filename:
         return
+
+    # Handle switch to diskcache. Check for existing cache file and remove it,
+    # so that diskcache can create a directory with the same name.
+    if os.path.exists(cache_filename):
+        os.remove(cache_filename)
 
     logging.info('Using price cache at "%s" (with indefinite expiration)', cache_filename)
 
