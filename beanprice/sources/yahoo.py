@@ -51,6 +51,11 @@ def parse_response(response: requests.models.Response) -> Dict:
         raise YahooError("Error fetching Yahoo data: {}".format(content["error"]))
     if not content["result"]:
         raise YahooError("No data returned from Yahoo, ensure that the symbol is correct")
+    
+    # print("Yahoo response content:")
+    
+    # print(content)
+    
     return content["result"][0]
 
 
@@ -95,6 +100,9 @@ def get_price_series(
     payload.update(_DEFAULT_PARAMS)
     response = session.get(url, params=payload)  # Use shared session
     result = parse_response(response)
+    
+    # print("Yahoo response:")
+    # print(result)
 
     meta = result["meta"]
     tzone = timezone(
@@ -144,6 +152,8 @@ class Source(source.Source):
         self.crumb = self.session.get(
             "https://query1.finance.yahoo.com/v1/test/getcrumb"
         ).text
+        
+        # print("Source initialized with session and crumb:")
 
     def get_latest_price(self, ticker: str) -> Optional[source.SourcePrice]:
         """See contract in beanprice.source.Source."""
