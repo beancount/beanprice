@@ -35,11 +35,18 @@ To fetch the latest prices from your beancount file, first ensure that commoditi
 2000-01-01 commodity AAPL
   price: "USD:yahoo/AAPL"
 ```
+Note: this is also a minimal viable ledger to use with beanprice
 
 Then run:
 
 ```shell
 bean-price ledger.beancount
+```
+
+To run against the minimal viable ledger example, shown above:
+
+```shell
+bean-price --inactive ledger.beancount
 ```
 
 To update prices up to the present day, run:
