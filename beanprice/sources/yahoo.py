@@ -25,11 +25,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from curl_cffi import requests
 
 from beanprice import source
-
+import time
 
 class YahooError(ValueError):
     "An error from the Yahoo API."
-
+RETRY_DELAYS = [1, 2, 4, 8, 16]
+MAX_RETRIES = len(RETRY_DELAYS)
 
 def parse_response(response: requests.models.Response) -> Dict:
     """Process as response from Yahoo.
@@ -52,6 +53,33 @@ def parse_response(response: requests.models.Response) -> Dict:
     if not content["result"]:
         raise YahooError("No data returned from Yahoo, ensure that the symbol is correct")
     return content["result"][0]
+
+def make_yahoo_request(session: requests.Session, url: str, params: Dict) -> requests.models.Response:
+    """
+    Helper function to make a request to Yahoo Finance with retry logic.
+    Handles 429 (Too Many Requests) and connection errors with exponential backoff.
+    """
+    for i in range(MAX_RETRIES):
+        try:
+            response = session.get(url, params=params)
+            if response.status_code == 429:
+                print(f"DEBUG: Rate limit hit (429) for {url}. Retrying in {RETRY_DELAYS[i]} seconds...")
+                time.sleep(RETRY_DELAYS[i] + (i * 0.5)) # Adds jitter
+                continue
+            response.raise_for_status() # Raise HTTPError for other bad status codes (4xx or 5xx)
+            return response
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429: # Catch 429 again if raise_for_status caught it
+                print(f"DEBUG: Rate limit hit (429) during retry {i+1}/{MAX_RETRIES}. Retrying in {RETRY_DELAYS[i]} seconds...")
+                time.sleep(RETRY_DELAYS[i] + (i * 0.5))
+                continue
+            raise
+        except requests.exceptions.ConnectionError as e:
+            print(f"DEBUG: Connection error: {e}. Retrying in {RETRY_DELAYS[i]} seconds...")
+            time.sleep(RETRY_DELAYS[i] + (i * 0.5))
+            continue
+    raise YahooError(f"Failed to fetch data after {MAX_RETRIES} retries due to persistent rate limiting or connection issues for {url}.")
+
 
 
 # Note: Feel free to suggest more here via a PR.
@@ -93,7 +121,7 @@ def get_price_series(
         "interval": "1d",
     }
     payload.update(_DEFAULT_PARAMS)
-    response = session.get(url, params=payload)  # Use shared session
+    response = make_yahoo_request(session, url, payload) # Use shared session and retry logic
     result = parse_response(response)
 
     meta = result["meta"]
@@ -157,8 +185,7 @@ class Source(source.Source):
             "crumb": self.crumb,  # Use the session’s crumb
         }
         payload.update(_DEFAULT_PARAMS)
-        response = self.session.get(url, params=payload)  # Use shared session
-
+        response = make_yahoo_request(self.session, url, payload) # Use shared session and retry logic
         try:
             result = parse_response(response)
         except YahooError as error:
