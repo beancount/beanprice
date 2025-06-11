@@ -823,7 +823,7 @@ def process_args() -> Tuple[
         ),
     )
 
-    # Using str type here instead of bool to allow for future expansion of 
+    # Using str type here instead of bool to allow for future expansion of
     # precision options.
     parser.add_argument(
         "-p",
