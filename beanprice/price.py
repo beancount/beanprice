@@ -823,7 +823,8 @@ def process_args() -> Tuple[
         ),
     )
 
-    # Using str type here instead of bool to allow for future expansion of precision options.
+    # Using str type here instead of bool to allow for future expansion of 
+    # precision options.
     parser.add_argument(
         "-p",
         "--precision",
@@ -831,7 +832,8 @@ def process_args() -> Tuple[
         choices=['std', 'raw'],
         default="std",
         help=(
-            "Defines the approach to determine the precision with which  prices are printed (default: %(default)s).\n"
+            "Defines the approach to determine the precision with which prices are printed"
+            " (default: %(default)s).\n"
             "std - standard beancount approach \n"
             "raw - print the prices with the precision, received from the data source \n"
         ),
