@@ -695,7 +695,8 @@ def process_args() -> Tuple[
         entries: A list of all the parsed entries.
         dcontext: A context used to determine decimal precision when printing.
     """
-    parser = argparse.ArgumentParser(description=beanprice.__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=beanprice.__doc__.splitlines()[0],
+                                     formatter_class=argparse.RawTextHelpFormatter)
 
     # Input sources or filenames.
     parser.add_argument(
@@ -827,6 +828,22 @@ def process_args() -> Tuple[
         help=(
             "Don't actually fetch the prices, just print the list of the ones "
             "to be fetched."
+        ),
+    )
+
+    # Using str type here instead of bool to allow for future expansion of
+    # precision options.
+    parser.add_argument(
+        "-p",
+        "--precision",
+        type=str,
+        choices=['std', 'raw'],
+        default="std",
+        help=(
+            "Defines the approach to determine the precision with which prices are printed"
+            " (default: %(default)s).\n"
+            "std - standard beancount approach \n"
+            "raw - print the prices with the precision, received from the data source \n"
         ),
     )
 
@@ -985,6 +1002,16 @@ def main():
             logging.info("Ignored to avoid clobber: %s %s", entry.date, entry.currency)
 
     # Print out the entries.
+
+    if args.precision == "raw":
+        dcontext = None
+
+    elif args.precision == "std":
+        pass
+
+    else:
+        raise ValueError(f"Invalid precision option: {args.precision}")
+
     printer.print_entries(price_entries, dcontext=dcontext)
 
 if __name__ == '__main__':
