@@ -8,7 +8,7 @@ import collections
 import datetime
 import functools
 from os import path
-import shelve
+import os
 import tempfile
 import hashlib
 import re
@@ -16,6 +16,7 @@ import sys
 import logging
 from concurrent import futures
 from typing import Any, Dict, List, Optional, NamedTuple, Tuple
+import diskcache
 
 from dateutil import tz
 
@@ -557,6 +558,11 @@ def setup_cache(cache_filename: Optional[str], clear_cache: bool):
     if not cache_filename:
         return
 
+    # Handle switch to diskcache. Check for existing cache file and remove it,
+    # so that diskcache can create a directory with the same name.
+    if os.path.exists(cache_filename) and os.path.isfile(cache_filename):
+        os.remove(cache_filename)
+
     logging.info('Using price cache at "%s" (with indefinite expiration)', cache_filename)
 
     flag = "c"
@@ -565,7 +571,7 @@ def setup_cache(cache_filename: Optional[str], clear_cache: bool):
         flag = "n"
 
     global _CACHE
-    _CACHE = shelve.open(cache_filename, flag=flag)  # type: ignore
+    _CACHE = diskcache.Cache(cache_filename, flag=flag)
     _CACHE.expiration = DEFAULT_EXPIRATION  # type: ignore
 
 
@@ -573,6 +579,8 @@ def reset_cache():
     """Reset the cache to its uninitialized state."""
     global _CACHE
     if _CACHE is not None:
+        if _CACHE.clear is not None:
+            _CACHE.clear()
         _CACHE.close()
     _CACHE = None
 
