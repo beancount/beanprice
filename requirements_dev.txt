@@ -1,4 +1,4 @@
 -r requirements.txt
 pylint==3.3.3
-pytest==5.4.2
+pytest==7.4.4
 mypy==1.14.1
