@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="beanprice",
-    version="2.0.0",
+    version="2.1.0",
     description="Price quotes fetcher for Beancount",
     long_description="""
       A script to fetch market data prices from various sources on the internet
