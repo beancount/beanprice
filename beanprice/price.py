@@ -164,12 +164,17 @@ def parse_single_source(source: str) -> PriceSource:
     Raises:
       ValueError: If invalid.
     """
-    match = re.match(r"([a-zA-Z]+[a-zA-Z0-9\._]+)/(\^?)([a-zA-Z0-9:=_\-\.\(\)]+)$", source)
+    match = re.match(
+        r"([a-zA-Z]+[a-zA-Z0-9\._]+)/(\^*)([a-zA-Z0-9:=_\-\.\(\)\^]+)$", source
+    )
     if not match:
         raise ValueError('Invalid source name: "{}"'.format(source))
-    short_module_name, invert, symbol = match.groups()
+    short_module_name, carets, symbol = match.groups()
     module = import_source(short_module_name)
-    return PriceSource(module, symbol, bool(invert))
+    invert = len(carets) % 2 == 1
+    # Every pair of carets is replaced by a single caret in the ticker.
+    actual_symbol = ("^" * (len(carets) // 2)) + symbol
+    return PriceSource(module, actual_symbol, invert)
 
 
 def import_source(module_name: str):

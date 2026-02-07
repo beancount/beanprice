@@ -372,6 +372,18 @@ class TestParseSource(unittest.TestCase):
         psource = price.parse_single_source("yahoo/CNYUSD=X")
         self.assertEqual(PS(yahoo, "CNYUSD=X", False), psource)
 
+        psource = price.parse_single_source("yahoo/^CNYUSD=X")
+        self.assertEqual(PS(yahoo, "CNYUSD=X", True), psource)
+
+        psource = price.parse_single_source("yahoo/^^GSPC")
+        self.assertEqual(PS(yahoo, "^GSPC", False), psource)
+
+        psource = price.parse_single_source("yahoo/^^^GSPC")
+        self.assertEqual(PS(yahoo, "^GSPC", True), psource)
+
+        psource = price.parse_single_source("yahoo/TICK^ER")
+        self.assertEqual(PS(yahoo, "TICK^ER", False), psource)
+
         # Make sure that an invalid name at the tail doesn't succeed.
         with self.assertRaises(ValueError):
             psource = price.parse_single_source("yahoo/CNYUSD&X")
