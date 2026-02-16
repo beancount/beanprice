@@ -436,6 +436,16 @@ def get_price_jobs_up_to_date(
             if not currency_map.get(key, None):
                 del lifetimes_map[key]
 
+    # Filter out invalid time intervals in lifetimes_map
+    lifetimes_map = {
+        currency_pair: [
+            (date_begin, date_end)
+            for date_begin, date_end in intervals
+            if date_begin < date_end
+        ]
+        for currency_pair, intervals in lifetimes_map.items()
+    }
+
     # Create price jobs based on fetch rate
     if update_rate == "daily":
         required_prices = lifetimes.required_daily_prices(
