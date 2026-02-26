@@ -164,7 +164,7 @@ def parse_single_source(source: str) -> PriceSource:
     Raises:
       ValueError: If invalid.
     """
-    match = re.match(r"([a-zA-Z]+[a-zA-Z0-9\._]+)/(\^?)([a-zA-Z0-9:=_\-\.\(\)]+)$", source)
+    match = re.match(r"([a-zA-Z]+[a-zA-Z0-9\._]+)/(\^?)([a-zA-Z0-9:=_\-\.\(\)&]+)$", source)
     if not match:
         raise ValueError('Invalid source name: "{}"'.format(source))
     short_module_name, invert, symbol = match.groups()

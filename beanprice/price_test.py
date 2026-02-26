@@ -374,10 +374,13 @@ class TestParseSource(unittest.TestCase):
 
         # Make sure that an invalid name at the tail doesn't succeed.
         with self.assertRaises(ValueError):
-            psource = price.parse_single_source("yahoo/CNYUSD&X")
+            psource = price.parse_single_source("yahoo/CNYUSD@X")
 
         psource = price.parse_single_source("beanprice.sources.yahoo/AAPL")
         self.assertEqual(PS(yahoo, "AAPL", False), psource)
+
+        psource = price.parse_single_source("yahoo/M&M.NS")
+        self.assertEqual(PS(yahoo, "M&M.NS", False), psource)
 
 
 class TestParseSourceMap(unittest.TestCase):
