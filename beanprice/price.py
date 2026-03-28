@@ -4,6 +4,7 @@ __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import argparse
+import codecs
 import collections
 import datetime
 import functools
@@ -961,31 +962,31 @@ def main():
             print(format_dated_price_str(dprice))
         return
 
-    # Fetch all the required prices, processing all the jobs.
-    executor = futures.ThreadPoolExecutor(max_workers=args.workers)
-    price_entries = filter(
-        None,
-        executor.map(
-            functools.partial(fetch_price, swap_inverted=args.swap_inverted), jobs
-        ),
-    )
-
-    # Sort them by currency, regardless of date (the dates should be close
-    # anyhow, and we tend to put them in chunks in the input files anyhow).
-    price_entries = sorted(price_entries, key=lambda e: e.currency)
-    if args.update:
-        # Sort additionally by date, to have an output consistent
-        # with single date bean-price output.
-        price_entries = sorted(price_entries, key=lambda e: e.date)
-
-    # Avoid clobber, remove redundant entries.
+    # Pre-build existing prices lookup for per-entry clobber filtering.
+    existing_prices = {}
     if not args.clobber:
-        price_entries, ignored_entries = filter_redundant_prices(price_entries, entries)
-        for entry in ignored_entries:
-            logging.info("Ignored to avoid clobber: %s %s", entry.date, entry.currency)
+        existing_prices = {
+            (entry.date, entry.currency): entry
+            for entry in entries
+            if isinstance(entry, data.Price)
+        }
 
-    # Print out the entries.
-    printer.print_entries(price_entries, dcontext=dcontext)
+    output = (
+        codecs.getwriter("utf-8")(sys.stdout.buffer)
+        if hasattr(sys.stdout, "buffer")
+        else sys.stdout
+    )
+    eprinter = printer.EntryPrinter(dcontext)
+
+    executor = futures.ThreadPoolExecutor(max_workers=args.workers)
+    fetch_fn = functools.partial(fetch_price, swap_inverted=args.swap_inverted)
+
+    for entry in filter(None, executor.map(fetch_fn, jobs)):
+        if not args.clobber and (entry.date, entry.currency) in existing_prices:
+            logging.info("Ignored to avoid clobber: %s %s", entry.date, entry.currency)
+            continue
+        output.write(eprinter(entry))
+        output.flush()
 
 if __name__ == '__main__':
     main()

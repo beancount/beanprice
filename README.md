@@ -48,6 +48,21 @@ To update prices up to the present day, run:
 bean-price --update ledger.beancount
 ```
 
+### Appending new prices to a file
+
+Output is streamed to stdout one entry per fetch, so it is safe to
+append directly — already-written entries survive an interrupted run:
+
+```shell
+bean-price --update ledger.beancount >> prices.beancount
+```
+
+After multiple runs, deduplicate and sort the file in-place:
+
+```shell
+sort -u -o prices.beancount prices.beancount
+```
+
 For more detailed guide for price fetching, read <https://beancount.github.io/docs/fetching_prices_in_beancount.html>.
 
 
