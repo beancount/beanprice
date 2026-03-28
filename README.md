@@ -48,6 +48,22 @@ To update prices up to the present day, run:
 bean-price --update ledger.beancount
 ```
 
+### Backfilling gaps in price history
+
+By default `--update` only fetches prices forward from the latest
+recorded date. Use `--update-fill-gaps` to also fetch any missing dates
+within the full lifetime of each commodity:
+
+```shell
+bean-price --update --update-fill-gaps ledger.beancount >> prices.beancount
+sort -u -o prices.beancount prices.beancount
+```
+
+This is useful when:
+- previous runs were interrupted and left holes in the history
+- a commodity was added retrospectively with an early start date
+- the ledger was imported from another tool with sparse price data
+
 For more detailed guide for price fetching, read <https://beancount.github.io/docs/fetching_prices_in_beancount.html>.
 
 

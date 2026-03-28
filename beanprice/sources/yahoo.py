@@ -18,11 +18,14 @@ timestamps, but the timezone of the particular market is included in the output.
 __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
+import logging
+import time
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from curl_cffi import requests
+from curl_cffi.requests.exceptions import ConnectionError as CurlConnectionError
 
 from beanprice import source
 
@@ -93,6 +96,7 @@ def get_price_series(
         "interval": "1d",
     }
     payload.update(_DEFAULT_PARAMS)
+    logging.debug("Yahoo get_price_series URL: %s, params: %s", url, payload)
     response = session.get(url, params=payload)  # Use shared session
     result = parse_response(response)
 
@@ -140,10 +144,18 @@ class Source(source.Source):
             }
         )
         # This populates the correct cookies in the session
-        self.session.get("https://fc.yahoo.com")
-        self.crumb = self.session.get(
-            "https://query1.finance.yahoo.com/v1/test/getcrumb"
-        ).text
+        for attempt in range(3):
+            try:
+                self.session.get("https://fc.yahoo.com")
+                self.crumb = self.session.get(
+                    "https://query1.finance.yahoo.com/v1/test/getcrumb"
+                ).text
+                break
+            except CurlConnectionError as exc:
+                if attempt == 2:
+                    raise
+                logging.warning("Yahoo session init failed (%s), retrying...", exc)
+                time.sleep(2 ** attempt)
 
     def get_latest_price(self, ticker: str) -> Optional[source.SourcePrice]:
         """See contract in beanprice.source.Source."""
@@ -157,6 +169,7 @@ class Source(source.Source):
             "crumb": self.crumb,  # Use the session’s crumb
         }
         payload.update(_DEFAULT_PARAMS)
+        logging.debug("Yahoo get_latest_price URL: %s, params: %s", url, payload)
         response = self.session.get(url, params=payload)  # Use shared session
 
         try:

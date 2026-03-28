@@ -4,6 +4,7 @@ __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import argparse
+import codecs
 import collections
 import datetime
 import functools
@@ -73,6 +74,10 @@ UNKNOWN_CURRENCY = "?"
 
 # A cache for the prices.
 _CACHE = None
+
+# Sentinel stored in the cache for fetches that returned no value or whose
+# result was clobbered.  Avoids repeating pointless network requests.
+_CACHE_SKIP = "__SKIP__"
 
 # Expiration for latest prices in the cache.
 DEFAULT_EXPIRATION = datetime.timedelta(seconds=30 * 60)  # 30 mins.
@@ -319,6 +324,8 @@ def get_price_jobs_at_date(
     if not inactive:
         balance_currencies = find_prices.find_balance_currencies(entries, date)
         log_currency_list("Currencies held in assets", balance_currencies)
+        for base_quote in (currencies - balance_currencies):
+            logging.debug("Ignoring %s/%s (no balance)", *base_quote)
         currencies = currencies & balance_currencies
 
     log_currency_list("Currencies to fetch", currencies)
@@ -348,6 +355,7 @@ def get_price_jobs_up_to_date(
     undeclared_source=None,
     update_rate="weekday",
     compress_days=1,
+    fill_gaps=False,
 ):
     """Get a list of trailing prices to fetch from a stream of entries.
 
@@ -361,6 +369,13 @@ def get_price_jobs_up_to_date(
       undeclared_source: A string, the name of the default source module to use to
         pull prices for commodities without a price source metadata on their
         Commodity directive declaration.
+      update_rate: A string, one of "daily", "weekday", or "weekly", controlling
+        how often prices are fetched within the active lifetime of a commodity.
+      compress_days: An integer number of days. Gaps shorter than this in a
+        commodity's lifetime are bridged, reducing redundant fetches.
+      fill_gaps: If True, fetch prices for every missing date within the full
+        lifetime of each commodity, not just from the latest existing price
+        forward. Useful for backfilling sparse price histories.
     Returns:
       A list of DatedPrice instances.
     """
@@ -407,7 +422,10 @@ def get_price_jobs_up_to_date(
                 # Start from date of currency directive
                 base, _ = base_quote
                 commodity_entry = commodity_map.get(base, None)
-                lifetimes_map[base_quote] = [(commodity_entry.date, None)]
+                if commodity_entry:
+                    lifetimes_map[base_quote] = [(commodity_entry.date, None)]
+                else:
+                    logging.debug("Ignoring %s/%s (no declaration or transactions)", *base_quote)
     else:
         # Compress any lifetimes based on compress_days
         lifetimes_map = lifetimes.compress_lifetimes_days(lifetimes_map, compress_days)
@@ -415,25 +433,30 @@ def get_price_jobs_up_to_date(
     # Trim lifetimes based on latest price dates.
     for base_quote in lifetimes_map:
         intervals = lifetimes_map[base_quote]
-        result = prices.get_latest_price(price_map, base_quote)
-        if result is None or result[0] is None:
+        if fill_gaps:
             lifetimes_map[base_quote] = lifetimes.trim_intervals(intervals, None, date_last)
         else:
-            latest_price_date = result[0]
-            date_first = latest_price_date + datetime.timedelta(days=1)
-            if date_first < date_last:
-                lifetimes_map[base_quote] = lifetimes.trim_intervals(
-                    intervals, date_first, date_last
-                )
+            result = prices.get_latest_price(price_map, base_quote)
+            if result is None or result[0] is None:
+                lifetimes_map[base_quote] = lifetimes.trim_intervals(intervals, None, date_last)
             else:
-                # We don't need to update if we're already up to date.
-                lifetimes_map[base_quote] = []
+                latest_price_date = result[0]
+                date_first = latest_price_date + datetime.timedelta(days=1)
+                if date_first < date_last:
+                    logging.debug("Trimming history for %s/%s: skipping dates before %s", *base_quote, date_first)
+                    lifetimes_map[base_quote] = lifetimes.trim_intervals(
+                        intervals, date_first, date_last
+                    )
+                else:
+                    # We don't need to update if we're already up to date.
+                    logging.debug("Ignoring %s/%s (up-to-date: %s)", *base_quote, latest_price_date)
+                    lifetimes_map[base_quote] = []
 
-    # Remove currency pairs we can't fetch any prices for.
     if not default_source:
         keys = list(lifetimes_map.keys())
         for key in keys:
             if not currency_map.get(key, None):
+                logging.debug("Ignoring %s/%s (no declaration)", *key)
                 del lifetimes_map[key]
 
     # Create price jobs based on fetch rate
@@ -450,6 +473,18 @@ def get_price_jobs_up_to_date(
     else:
         raise ValueError("Invalid Update Rate")
 
+    if fill_gaps:
+        # Pre-compute existing price dates per pair to avoid O(n*m) cost.
+        price_dates_by_pair = {
+            pair: {p[0] for p in price_map.get(pair, [])}
+            for pair in lifetimes_map
+        }
+        required_prices = [
+            key for key in required_prices
+            if key[0] not in price_dates_by_pair.get((key[1], key[2]), set())
+        ]
+        logging.debug("fill_gaps: %d date(s) missing from price file", len(required_prices))
+
     jobs = []
     # Build up the list of jobs to fetch prices for.
     for key in required_prices:
@@ -459,6 +494,14 @@ def get_price_jobs_up_to_date(
             psources = [PriceSource(default_source, base, False)]
 
         jobs.append(DatedPrice(base, quote, date, psources))
+
+    if fill_gaps:
+        n_before = len(jobs)
+        jobs = [job for job in jobs if not is_price_cache_skip(job)]
+        n_skipped = n_before - len(jobs)
+        if n_skipped:
+            logging.debug("fill_gaps: %d job(s) skipped (cached as no-value/clobbered)", n_skipped)
+        logging.debug("fill_gaps: %d job(s) to fetch", len(jobs))
 
     return sorted(jobs)
 
@@ -503,12 +546,17 @@ def fetch_cached_price(source, symbol, date):
     else:
         # The cache is enabled and we have to compute the current/latest price.
         # Try to fetch from the cache but miss if the price is too old.
-        md5 = hashlib.md5()
-        md5.update(str((type(source).__module__, symbol, date)).encode("utf-8"))
-        key = md5.hexdigest()
+        key = _cache_key(source, symbol, date)
         timestamp_now = int(now().timestamp())
         try:
             timestamp_created, result_naive = _CACHE[key]
+
+            if (timestamp_now - timestamp_created) > _CACHE.expiration.total_seconds():
+                raise KeyError
+
+            # Sentinel: a previous fetch returned no value or was clobbered.
+            if result_naive is _CACHE_SKIP or result_naive == _CACHE_SKIP:
+                return None
 
             # Convert naive timezone to UTC, which is what the cache is always
             # assumed to store. (The reason for this is that timezones from
@@ -520,8 +568,6 @@ def fetch_cached_price(source, symbol, date):
             else:
                 result = result_naive
 
-            if (timestamp_now - timestamp_created) > _CACHE.expiration.total_seconds():
-                raise KeyError
         except KeyError:
             logging.info("Fetching: %s (time: %s)", symbol, time)
             try:
@@ -542,8 +588,9 @@ def fetch_cached_price(source, symbol, date):
             else:
                 result_naive = result
 
-            if result_naive is not None:
-                _CACHE[key] = (timestamp_now, result_naive)
+            # Cache both successful results and None (no-value sentinel) so
+            # future runs skip repeating pointless network requests.
+            _CACHE[key] = (timestamp_now, result_naive if result_naive is not None else _CACHE_SKIP)
     return result
 
 
@@ -583,6 +630,35 @@ def reset_cache():
             _CACHE.clear()
         _CACHE.close()
     _CACHE = None
+
+
+def _cache_key(source_module, symbol, date) -> str:
+    md5 = hashlib.md5()
+    md5.update(str((type(source_module).__module__, symbol, date)).encode("utf-8"))
+    return md5.hexdigest()
+
+
+def is_price_cache_skip(dprice: DatedPrice) -> bool:
+    """Return True if every source of this job is marked skip in the cache."""
+    if _CACHE is None:
+        return False
+    for psource in dprice.sources:
+        cached = _CACHE.get(_cache_key(psource.module, psource.symbol, dprice.date))
+        if cached is None or cached[1] != _CACHE_SKIP:
+            return False
+    return bool(dprice.sources)
+
+
+def mark_price_cache_skip(dprice: DatedPrice):
+    """Mark all sources of a price job as skip in the cache.
+
+    Called after a clobber so future runs don't re-fetch and re-clobber.
+    """
+    if _CACHE is None:
+        return
+    timestamp_now = int(now().timestamp())
+    for psource in dprice.sources:
+        _CACHE[_cache_key(psource.module, psource.symbol, dprice.date)] = (timestamp_now, _CACHE_SKIP)
 
 
 def fetch_price(dprice: DatedPrice, swap_inverted: bool = False) -> Optional[data.Price]:
@@ -763,6 +839,16 @@ def process_args() -> Tuple[
     )
 
     parser.add_argument(
+        "--update-fill-gaps",
+        action="store_true",
+        help=(
+            "Fill gaps in price history by fetching missing prices for all dates "
+            "within a commodity's active lifetime, not just forward from the latest "
+            "existing price. Requires --update."
+        ),
+    )
+
+    parser.add_argument(
         "-i",
         "--inactive",
         action="store_true",
@@ -928,6 +1014,7 @@ def process_args() -> Tuple[
                     args.undeclared,
                     args.update_rate,
                     args.update_compress,
+                    args.update_fill_gaps,
                 )
             )
             all_entries.extend(entries)
@@ -961,31 +1048,28 @@ def main():
             print(format_dated_price_str(dprice))
         return
 
-    # Fetch all the required prices, processing all the jobs.
-    executor = futures.ThreadPoolExecutor(max_workers=args.workers)
-    price_entries = filter(
-        None,
-        executor.map(
-            functools.partial(fetch_price, swap_inverted=args.swap_inverted), jobs
-        ),
-    )
-
-    # Sort them by currency, regardless of date (the dates should be close
-    # anyhow, and we tend to put them in chunks in the input files anyhow).
-    price_entries = sorted(price_entries, key=lambda e: e.currency)
-    if args.update:
-        # Sort additionally by date, to have an output consistent
-        # with single date bean-price output.
-        price_entries = sorted(price_entries, key=lambda e: e.date)
-
-    # Avoid clobber, remove redundant entries.
+    existing_prices = {}
     if not args.clobber:
-        price_entries, ignored_entries = filter_redundant_prices(price_entries, entries)
-        for entry in ignored_entries:
-            logging.info("Ignored to avoid clobber: %s %s", entry.date, entry.currency)
+        existing_prices = {
+            (entry.date, entry.currency): entry
+            for entry in entries
+            if isinstance(entry, data.Price)
+        }
+    output = (codecs.getwriter("utf-8")(sys.stdout.buffer)
+              if hasattr(sys.stdout, "buffer") else sys.stdout)
+    eprinter = printer.EntryPrinter(dcontext)
+    executor = futures.ThreadPoolExecutor(max_workers=args.workers)
+    fetch_fn = functools.partial(fetch_price, swap_inverted=args.swap_inverted)
 
-    # Print out the entries.
-    printer.print_entries(price_entries, dcontext=dcontext)
+    for job, entry in zip(jobs, executor.map(fetch_fn, jobs)):
+        if entry is None:
+            continue
+        if not args.clobber and (entry.date, entry.currency) in existing_prices:
+            logging.info("Ignored to avoid clobber: %s %s", entry.date, entry.currency)
+            mark_price_cache_skip(job)
+            continue
+        output.write(eprinter(entry))
+        output.flush()
 
 if __name__ == '__main__':
     main()
