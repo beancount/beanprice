@@ -20,7 +20,7 @@ __license__ = "GNU GPLv2"
 
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from curl_cffi import requests
 
@@ -31,7 +31,7 @@ class YahooError(ValueError):
     "An error from the Yahoo API."
 
 
-def parse_response(response: requests.models.Response) -> Dict:
+def parse_response(response: requests.models.Response) -> dict:
     """Process as response from Yahoo.
 
     Raises:
@@ -62,7 +62,7 @@ _MARKETS = {
 }
 
 
-def parse_currency(result: Dict[str, Any]) -> Optional[str]:
+def parse_currency(result: dict[str, Any]) -> Optional[str]:
     """Infer the currency from the result."""
     if "market" not in result:
         return None
@@ -81,13 +81,13 @@ def get_price_series(
     time_begin: datetime,
     time_end: datetime,
     session: requests.Session,
-) -> Tuple[List[Tuple[datetime, Decimal]], str]:
+) -> tuple[list[tuple[datetime, Decimal]], str]:
     """Return a series of timestamped prices."""
 
     if requests is None:
         raise YahooError("You must install the 'requests' library.")
     url = "https://query1.finance.yahoo.com/v8/finance/chart/{}".format(ticker)
-    payload: Dict[str, Union[int, str]] = {
+    payload: dict[str, Union[int, str]] = {
         "period1": int(time_begin.timestamp()),
         "period2": int(time_end.timestamp()),
         "interval": "1d",
@@ -203,7 +203,7 @@ class Source(source.Source):
 
     def get_daily_prices(
         self, ticker: str, time_begin: datetime, time_end: datetime
-    ) -> Optional[List[source.SourcePrice]]:
+    ) -> Optional[list[source.SourcePrice]]:
         """See contract in beanprice.source.Source."""
         series, currency = get_price_series(ticker, time_begin, time_end, self.session)
         return [source.SourcePrice(price, time, currency) for time, price in series]

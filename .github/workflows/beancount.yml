@@ -1,19 +1,25 @@
 name: beancount
 
 on:
-  [push, pull_request]
+  push:
+    branches: ['main', 'master']
+  pull_request:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v6
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: '3.9'
-      - run: pip install -r requirements_dev.txt
-      - run: pylint beanprice
-      - run: pytest beanprice
-      - run: mypy beanprice
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --group dev
+      - run: uv run ruff check beanprice
+      - run: uv run pylint beanprice
+      - run: uv run pytest beanprice
+      - run: uv run mypy beanprice

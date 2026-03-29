@@ -20,7 +20,11 @@ Otherwise read the source.
 To install beanprice, run:
 
 ```shell
+# using pip
 pip install git+https://github.com/beancount/beanprice.git
+
+# using uv 
+uv add git+https://github.com/beancount/beanprice.git
 ```
 
 You can fetch the latest price of a stock by running:

@@ -209,20 +209,20 @@ class TestProcessArguments(unittest.TestCase):
         2015-01-01 open USD ;; Error
         """
         with test_utils.capture("stderr"):
-            args, jobs, _, __ = run_with_args(price.process_args, ["--no-cache", filename])
+            _args, jobs, _, __ = run_with_args(price.process_args, ["--no-cache", filename])
             self.assertEqual([], jobs)
 
     def test_filename_exists(self):
         with tempfile.NamedTemporaryFile("w") as tmpfile:
             with test_utils.capture("stderr"):
-                args, jobs, _, __ = run_with_args(
+                _args, jobs, _, __ = run_with_args(
                     price.process_args, ["--no-cache", tmpfile.name]
                 )
                 self.assertEqual([], jobs)  # Empty file.
 
     def test_expressions(self):
         with test_utils.capture("stderr"):
-            args, jobs, _, __ = run_with_args(
+            _args, jobs, _, __ = run_with_args(
                 price.process_args, ["--no-cache", "-e", "USD:yahoo/AAPL"]
             )
             self.assertEqual(

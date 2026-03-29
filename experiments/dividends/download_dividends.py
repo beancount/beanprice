@@ -6,7 +6,6 @@ __license__ = "GNU GPLv2"
 
 from datetime import date as Date
 from decimal import Decimal
-from typing import List, Tuple
 import argparse
 import csv
 import datetime
@@ -19,7 +18,7 @@ import requests
 
 def download_dividends(
     instrument: str, start_date: Date, end_date: Date
-) -> List[Tuple[Date, Decimal]]:
+) -> list[tuple[Date, Decimal]]:
     """Download a list of dividends issued over a time interval."""
     tim = datetime.time()
     payload = {

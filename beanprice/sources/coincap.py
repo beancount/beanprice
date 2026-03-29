@@ -15,7 +15,7 @@ https://docs.coincap.io/
 from datetime import datetime, timezone, timedelta
 import math
 from decimal import Decimal
-from typing import List, Optional, Dict
+from typing import Optional
 import requests
 from beanprice import source
 
@@ -26,7 +26,7 @@ class CoincapError(ValueError):
     "An error from the Coincap importer."
 
 
-def get_asset_list() -> List[Dict[str, str]]:
+def get_asset_list() -> list[dict[str, str]]:
     """
     Get list of currencies supported by Coincap. Returned is a list with
     elements with many properties, including "id", representing the Coincap id,
@@ -85,7 +85,7 @@ def get_latest_price(base_currency: str) -> source.SourcePrice:
 
 def get_price_series(
     base_currency_id: str, time_begin: datetime, time_end: datetime
-) -> List[source.SourcePrice]:
+) -> list[source.SourcePrice]:
     path = f"assets/{base_currency_id}/history"
     params = {
         "interval": "d1",
@@ -129,5 +129,5 @@ class Source(source.Source):
 
     def get_prices_series(
         self, ticker: str, time_begin: datetime, time_end: datetime
-    ) -> List[source.SourcePrice]:
+    ) -> list[source.SourcePrice]:
         return get_price_series(resolve_currency_id(ticker), time_begin, time_end)

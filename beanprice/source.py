@@ -14,7 +14,7 @@ __license__ = "GNU GPLv2"
 
 import datetime
 from decimal import Decimal
-from typing import List, Optional, NamedTuple
+from typing import Optional, NamedTuple
 
 
 # A record that contains data for a price fetched from a source.
@@ -93,7 +93,7 @@ class Source:
 
     def get_prices_series(
         self, ticker: str, time_begin: datetime.datetime, time_end: datetime.datetime
-    ) -> Optional[List[SourcePrice]]:
+    ) -> Optional[list[SourcePrice]]:
         """Return the historical daily price series between two dates.
 
         Note that weekends don't have any prices, so there's no guarantee that

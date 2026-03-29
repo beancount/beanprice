@@ -35,17 +35,17 @@ def response(contents, status_code=requests.codes.ok):
 
 class ECBRatesErrorFetcher(unittest.TestCase):
     def test_error_invalid_ticker(self):
-        with self.assertRaises(ValueError) as exc:
+        with self.assertRaises(ValueError):
             ecbrates.Source().get_latest_price("INVALID")
 
     def test_error_network(self):
         with response("Foobar", 404):
-            with self.assertRaises(ValueError) as exc:
+            with self.assertRaises(ValueError):
                 ecbrates.Source().get_latest_price("EUR-SEK")
 
     def test_empty_response(self):
         with response("", 200):
-            with self.assertRaises(ecbrates.ECBRatesError) as exc:
+            with self.assertRaises(ecbrates.ECBRatesError):
                 ecbrates.Source().get_latest_price("EUR-SEK")
 
     def test_valid_response(self):

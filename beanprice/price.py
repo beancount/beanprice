@@ -15,7 +15,7 @@ import re
 import sys
 import logging
 from concurrent import futures
-from typing import Any, Dict, List, Optional, NamedTuple, Tuple
+from typing import Any, Optional, NamedTuple
 import diskcache
 
 from dateutil import tz
@@ -60,7 +60,7 @@ class DatedPrice(NamedTuple):
     base: Optional[str]
     quote: Optional[str]
     date: Optional[datetime.date]
-    sources: List[PriceSource]
+    sources: list[PriceSource]
 
 
 # The Python package where the default sources are found.
@@ -102,7 +102,7 @@ def format_dated_price_str(dprice: DatedPrice) -> str:
     )
 
 
-def parse_source_map(source_map_spec: str) -> Dict[str, List[PriceSource]]:
+def parse_source_map(source_map_spec: str) -> dict[str, list[PriceSource]]:
     """Parse a source map specification string.
 
     Source map specifications allow the specification of multiple sources for
@@ -134,7 +134,7 @@ def parse_source_map(source_map_spec: str) -> Dict[str, List[PriceSource]]:
     Raises:
       ValueError: If an invalid pattern has been specified.
     """
-    source_map: Dict[str, List[PriceSource]] = collections.defaultdict(list)
+    source_map: dict[str, list[PriceSource]] = collections.defaultdict(list)
     for source_list_spec in re.split("[ ;]", source_map_spec):
         match = re.match("({}):(.*)$".format(amount.CURRENCY_RE), source_list_spec)
         if not match:
@@ -202,7 +202,7 @@ def import_source(module_name: str):
 def find_currencies_declared(
     entries: data.Entries,
     date: Optional[datetime.date] = None,
-) -> List[Tuple[str, str, List[PriceSource]]]:
+) -> list[tuple[str, str, list[PriceSource]]]:
     """Return currencies declared in Commodity directives.
 
     If a 'price' metadata field is provided, include all the quote currencies
@@ -639,8 +639,8 @@ def fetch_price(dprice: DatedPrice, swap_inverted: bool = False) -> Optional[dat
 
 
 def filter_redundant_prices(
-    price_entries: List[data.Price], existing_entries: List[data.Price], diffs: bool = False
-) -> Tuple[List[data.Price], List[data.Price]]:
+    price_entries: list[data.Price], existing_entries: list[data.Price], diffs: bool = False
+) -> tuple[list[data.Price], list[data.Price]]:
     """Filter out new entries that are redundant from an existing set.
 
     If the price differs, we override it with the new entry only on demand. This
@@ -663,8 +663,8 @@ def filter_redundant_prices(
         for entry in existing_entries
         if isinstance(entry, data.Price)
     }
-    filtered_prices: List[data.Price] = []
-    ignored_prices: List[data.Price] = []
+    filtered_prices: list[data.Price] = []
+    ignored_prices: list[data.Price] = []
     for entry in price_entries:
         key = (entry.date, entry.currency)
         if key in existing_prices:
@@ -680,9 +680,9 @@ def filter_redundant_prices(
     return filtered_prices, ignored_prices
 
 
-def process_args() -> Tuple[
+def process_args() -> tuple[
     argparse.Namespace,
-    List[DatedPrice],
+    list[DatedPrice],
     data.Directives,
     Optional[Any],
 ]:
@@ -887,7 +887,7 @@ def process_args() -> Tuple[
     if args.expressions:
         # Interpret the arguments as price sources.
         for source_str in args.sources:
-            psources: List[PriceSource] = []
+            psources: list[PriceSource] = []
             try:
                 psource_map = parse_source_map(source_str)
             except ValueError:
@@ -940,7 +940,7 @@ def process_args() -> Tuple[
                 )
                 continue
             logging.info('Loading "%s"', filename)
-            entries, errors, options_map = loader.load_file(filename, log_errors=sys.stderr)
+            entries, _errors, options_map = loader.load_file(filename, log_errors=sys.stderr)
             if dcontext is None:
                 dcontext = options_map["dcontext"]
             for date in dates:
