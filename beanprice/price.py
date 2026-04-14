@@ -337,6 +337,41 @@ def get_price_jobs_at_date(
     return sorted(jobs)
 
 
+def get_price_jobs_unpriced(
+    entries: data.Entries,
+    quote: str,
+    date: Optional[datetime.date] = None,
+    undeclared_source: Optional[str] = None,
+) -> List[DatedPrice]:
+    """Get a list of prices to fetch for unpriced currencies.
+
+    These are currencies that have a balance but no price or cost history.
+
+    Args:
+      entries: A list of beancount entries.
+      quote: The quote currency to use.
+      date: A datetime.date instance.
+      undeclared_source: A string, the name of the default source module to use.
+    Returns:
+      A list of DatedPrice instances.
+    """
+    unpriced_bases = find_prices.find_unpriced_currencies(entries, date)
+    if not unpriced_bases:
+        return []
+
+    default_source_name = undeclared_source or DEFAULT_SOURCE
+    default_source = import_source(default_source_name)
+
+    jobs = []
+    for base in sorted(unpriced_bases):
+        # We only add it if it's not the same as the quote currency.
+        if base == quote:
+            continue
+        psources = [PriceSource(default_source, base, False)]
+        jobs.append(DatedPrice(base, quote, date, psources))
+    return jobs
+
+
 # TODO(blais): This could be modified to use the get_daily_prices() interface,
 # or perhaps to extend it to intervals, and let the price source decide for
 # itself how to implement fetching (e.g., use a single call + filter, or use
@@ -763,6 +798,23 @@ def process_args() -> Tuple[
     )
 
     parser.add_argument(
+        "--update-unpriced",
+        action="store_true",
+        help=(
+            "Fetch latest prices for currencies that have a balance but no "
+            "price or cost history."
+        ),
+    )
+
+    parser.add_argument(
+        "--unpriced-quote",
+        metavar="CURRENCY",
+        help=(
+            "The quote currency to use for unpriced prices (defaults to USD or first operating_currency)."
+        ),
+    )
+
+    parser.add_argument(
         "-i",
         "--inactive",
         action="store_true",
@@ -884,6 +936,7 @@ def process_args() -> Tuple[
     jobs = []
     all_entries = []
     dcontext = None
+    options_map: Dict[str, Any] = {}
     if args.expressions:
         # Interpret the arguments as price sources.
         for source_str in args.sources:
@@ -948,6 +1001,27 @@ def process_args() -> Tuple[
                     get_price_jobs_at_date(entries, date, args.inactive, args.undeclared)
                 )
                 all_entries.extend(entries)
+
+    if all_entries and args.update_unpriced:
+        if args.unpriced_quote:
+            quote = args.unpriced_quote
+        else:
+            operating_currencies = options_map.get("operating_currency", [])
+            if not operating_currencies:
+                parser.error(
+                    "--update-unpriced requires a quote currency. "
+                    "Please specify --unpriced-quote or define 'operating_currency' in your ledger."
+                )
+            quote = operating_currencies[0]
+
+        unpriced_jobs = get_price_jobs_unpriced(
+            all_entries, quote, args.date, args.undeclared
+        )
+        # Avoid duplicates
+        existing_job_keys = {(j.base, j.quote, j.date) for j in jobs}
+        for j in unpriced_jobs:
+            if (j.base, j.quote, j.date) not in existing_job_keys:
+                jobs.append(j)
 
     return args, jobs, data.sorted(all_entries), dcontext
 

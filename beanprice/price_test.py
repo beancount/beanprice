@@ -624,6 +624,27 @@ class TestFilters(unittest.TestCase):
             {(job.base, job.quote, job.date) for job in jobs},
         )
 
+    @loader.load_doc()
+    def test_get_price_jobs_unpriced(self, entries, _, __):
+        """
+        2000-01-10 open Assets:US:Invest:QQQ
+        2000-01-10 open Assets:US:Invest:VEA
+        2000-01-10 open Assets:Cash
+        2000-01-10 open Equity:OpeningBalances
+
+        2021-01-01 commodity QQQ
+          price: "USD:yahoo/NASDAQ:QQQ"
+
+        2021-01-04 *
+          Assets:US:Invest:QQQ             100 QQQ {86.23 USD}
+          Assets:US:Invest:VEA             200 VEA
+          Assets:Cash                    1000 USD
+          Equity:OpeningBalances
+        """
+        # VEA is held but has no price or cost history (it's at balance but no cost).
+        jobs = price.get_price_jobs_unpriced(entries, "USD", None, "yahoo")
+        self.assertEqual({("VEA", "USD")}, {(job.base, job.quote) for job in jobs})
+
 
 class TestFromFile(unittest.TestCase):
     @loader.load_doc()
