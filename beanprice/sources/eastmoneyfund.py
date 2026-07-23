@@ -17,6 +17,8 @@ Timezone information: the http API requests GMT+8,
 """
 
 import datetime
+import json
+from pathlib import Path
 import re
 from decimal import Decimal
 import requests
@@ -33,6 +35,7 @@ headers = {
     "content-type": "application/json",
     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:22.0)"
     "Gecko/20100101 Firefox/22.0",
+    "Referer": "http://fundf10.eastmoney.com/"
 }
 
 
@@ -43,56 +46,48 @@ class EastMoneyFundError(ValueError):
 UnsupportTickerError = EastMoneyFundError("header not match, dont support this ticker type")
 
 
-def parse_page(page):
-    tr_re = re.compile(r"<tr>(.*?)</tr>")
-    item_re = re.compile(
-        r"<td>(\d{4}-\d{2}-\d{2})</td><td.*?>(.*?)</td><td.*?>(.*?)</td>"
-        "<td.*?>(.*?)</td><td.*?>(.*?)</td><td.*?>(.*?)</td><td.*?></td>",
-        re.X,
-    )
-    header_match = re.compile(
-        r"<th.*?净值日期</th><th>单位净值</th><th>累计净值</th><th>日增长率</th>"
-        "<th>申购状态</th><th>赎回状态</th>.*?分红送配</th>"
-    )
-    table = tr_re.findall(page)
-    if not header_match.match(table[0]):
-        raise UnsupportTickerError
-    try:
-        table = [
-            (
-                datetime.datetime.fromisoformat(t[0]).replace(hour=15, tzinfo=TIMEZONE),
-                Decimal(t[1]),
-            )
-            for t in [item_re.match(x).groups() for x in table[1:]]
-        ]
-    except AttributeError:
+def parse_json(json_data):
+    data = json_data.get("Data")
+    if not data or not data.get("LSJZList"):
         return None
-    return table
+
+    try:
+        return [
+            (
+                datetime.datetime.fromisoformat(item["FSRQ"]).replace(
+                    hour=15,
+                    tzinfo=TIMEZONE,
+                ),
+                Decimal(item["DWJZ"]),
+            )
+            for item in data["LSJZList"]
+        ]
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 def get_price_series(
     ticker: str, time_begin: datetime.datetime, time_end: datetime.datetime
 ):
-    base_url = "https://fundf10.eastmoney.com/F10DataApi.aspx"
+    base_url = "http://api.fund.eastmoney.com/f10/lsjz"
     time_delta_day = (time_end - time_begin).days + 1
     pages = time_delta_day // 30 + 1
     res = []
     for page in range(1, pages + 1):
         query = {
-            "code": ticker,
-            "page": str(page),
-            "sdate": time_begin.astimezone(TIMEZONE).date().isoformat(),
-            "edate": time_end.astimezone(TIMEZONE).date().isoformat(),
-            "type": "lsjz",
-            "per": str(30),
+            "fundCode": ticker,
+            "pageIndex": str(page),
+            "startDate": time_begin.astimezone(TIMEZONE).date().isoformat(),
+            "endDate": time_end.astimezone(TIMEZONE).date().isoformat(),
+            "pageSize": str(30),
         }
         response = requests.get(base_url, params=query, headers=headers)
         if response.status_code != requests.codes.ok:
             raise EastMoneyFundError(
                 f"Invalid response ({response.status_code}): {response.text}"
             )
-
-        price = parse_page(response.text)
+        json_data = response.json()
+        price = parse_json(json_data)
         if price is None and page == 1:
             raise EastMoneyFundError(
                 f"Invalid ticker {ticker} or "
