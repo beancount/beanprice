@@ -35,7 +35,7 @@ headers = {
     "content-type": "application/json",
     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:22.0)"
     "Gecko/20100101 Firefox/22.0",
-    "Referer": "http://fundf10.eastmoney.com/"
+    "Referer": "https://fundf10.eastmoney.com/"
 }
 
 
@@ -69,7 +69,9 @@ def parse_json(json_data):
 def get_price_series(
     ticker: str, time_begin: datetime.datetime, time_end: datetime.datetime
 ):
-    base_url = "http://api.fund.eastmoney.com/f10/lsjz"
+    # EastMoney no longer accepts the plain HTTP endpoint (port 80).  Use the
+    # HTTPS API so requests do not fail with ``Connection refused``.
+    base_url = "https://api.fund.eastmoney.com/f10/lsjz"
     time_delta_day = (time_end - time_begin).days + 1
     pages = time_delta_day // 30 + 1
     res = []
