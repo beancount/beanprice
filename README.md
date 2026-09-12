@@ -121,3 +121,8 @@ Copyright (C) 2007-2020  Martin Blais.  All Rights Reserved.
 
 This code is distributed under the terms of the "GNU GPLv2 only".
 See COPYING file for details.
+
+## Validated portfolio price synchronization
+
+This fork also provides `bean-price-sync` for complete holding coverage, dated
+FX conversion, and atomic, duplicate-safe ledger updates. See [SYNC.md](SYNC.md).

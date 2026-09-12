@@ -64,6 +64,8 @@ _MARKETS = {
 
 def parse_currency(result: Dict[str, Any]) -> Optional[str]:
     """Infer the currency from the result."""
+    if result.get("currency"):
+        return result["currency"]
     if "market" not in result:
         return None
     return _MARKETS.get(result["market"], None)
@@ -93,7 +95,7 @@ def get_price_series(
         "interval": "1d",
     }
     payload.update(_DEFAULT_PARAMS)
-    response = session.get(url, params=payload)  # Use shared session
+    response = session.get(url, params=payload, timeout=30)  # Use shared session
     result = parse_response(response)
 
     meta = result["meta"]
@@ -139,15 +141,22 @@ class Source(source.Source):
             "Sec-Ch-Ua-Platform": '"Linux"',
             }
         )
-        # This populates the correct cookies in the session
-        self.session.get("https://fc.yahoo.com")
+        self.crumb = None
+
+    def _prepare_session(self):
+        """Defer network access until a quote is requested, not object creation."""
+        if self.crumb is not None:
+            return
+        # This populates the correct cookies in the session.
+        self.session.get("https://fc.yahoo.com", timeout=30)
         self.crumb = self.session.get(
-            "https://query1.finance.yahoo.com/v1/test/getcrumb"
+            "https://query1.finance.yahoo.com/v1/test/getcrumb", timeout=30
         ).text
 
     def get_latest_price(self, ticker: str) -> Optional[source.SourcePrice]:
         """See contract in beanprice.source.Source."""
 
+        self._prepare_session()
         url = "https://query1.finance.yahoo.com/v7/finance/quote"
         fields = ["symbol", "regularMarketPrice", "regularMarketTime"]
         payload = {
@@ -157,7 +166,7 @@ class Source(source.Source):
             "crumb": self.crumb,  # Use the session’s crumb
         }
         payload.update(_DEFAULT_PARAMS)
-        response = self.session.get(url, params=payload)  # Use shared session
+        response = self.session.get(url, params=payload, timeout=30)  # Use shared session
 
         try:
             result = parse_response(response)
@@ -187,6 +196,7 @@ class Source(source.Source):
     ) -> Optional[source.SourcePrice]:
         """See contract in beanprice.source.Source."""
 
+        self._prepare_session()
         # Get the latest data returned over the last 5 days.
         series, currency = get_price_series(
             ticker, time - timedelta(days=5), time, self.session
@@ -199,11 +209,15 @@ class Source(source.Source):
         if latest is None:
             raise YahooError("Could not find price before {} in {}".format(time, series))
 
-        return source.SourcePrice(price, data_dt, currency)
+        selected_time, selected_price = latest
+        return source.SourcePrice(selected_price, selected_time, currency)
 
     def get_daily_prices(
         self, ticker: str, time_begin: datetime, time_end: datetime
     ) -> Optional[List[source.SourcePrice]]:
         """See contract in beanprice.source.Source."""
+        self._prepare_session()
         series, currency = get_price_series(ticker, time_begin, time_end, self.session)
         return [source.SourcePrice(price, time, currency) for time, price in series]
+
+    get_prices_series = get_daily_prices

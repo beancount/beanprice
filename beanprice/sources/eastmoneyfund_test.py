@@ -30,6 +30,14 @@ def response(contents, status_code=requests.codes.ok):
     response = mock.Mock()
     response.status_code = status_code
     response.text = contents
+    if contents == CONTENTS:
+        rows = eastmoneyfund.parse_page(contents)
+        response.json.return_value = {"ErrCode": 0, "TotalCount": len(rows), "Data": {
+            "LSJZList": [{"FSRQ": day.date().isoformat(), "DWJZ": str(value),
+                          "NAVTYPE": "1", "ACTUALSYI": ""} for day, value in rows]}}
+    else:
+        response.json.return_value = {"ErrCode": 0, "TotalCount": 1, "Data": {
+            "LSJZList": [{"NAVTYPE": "2", "ACTUALSYI": "1.5730"}]}}
     return mock.patch("requests.get", return_value=response)
 
 
@@ -50,7 +58,8 @@ class EastMoneyFundFetcher(unittest.TestCase):
             self.assertEqual(eastmoneyfund.UnsupportTickerError, exc.exception)
 
     def test_latest_price(self):
-        with response(CONTENTS):
+        rows = eastmoneyfund.parse_page(CONTENTS)
+        with mock.patch.object(eastmoneyfund, "get_price_series", return_value=rows):
             srcprice = eastmoneyfund.Source().get_latest_price("377240")
             self.assertIsInstance(srcprice, source.SourcePrice)
             self.assertEqual(Decimal("5.1890"), srcprice.price)
@@ -58,7 +67,7 @@ class EastMoneyFundFetcher(unittest.TestCase):
 
     def test_historical_price(self):
         with response(CONTENTS):
-            time = datetime.datetime(2018, 3, 27, 0, 0, 0, tzinfo=tz.tzutc())
+            time = datetime.datetime(2020, 10, 9, 0, 0, 0, tzinfo=tz.tzutc())
             srcprice = eastmoneyfund.Source().get_historical_price("377240", time)
             self.assertIsInstance(srcprice, source.SourcePrice)
             self.assertEqual(Decimal("5.1890"), srcprice.price)
@@ -70,9 +79,9 @@ class EastMoneyFundFetcher(unittest.TestCase):
 
     def test_get_prices_series(self):
         with response(CONTENTS):
-            time = datetime.datetime(2018, 3, 27, 0, 0, 0, tzinfo=tz.tzutc())
+            time = datetime.datetime(2020, 10, 9, 0, 0, 0, tzinfo=tz.tzutc())
             srcprice = eastmoneyfund.Source().get_prices_series(
-                "377240", time - datetime.timedelta(days=10), time
+                "377240", time - datetime.timedelta(days=30), time
             )
             self.assertIsInstance(srcprice, list)
             self.assertIsInstance(srcprice[-1], source.SourcePrice)
@@ -89,6 +98,49 @@ class EastMoneyFundFetcher(unittest.TestCase):
                 datetime.datetime(2020, 9, 10, 15, 0, 0, tzinfo=eastmoneyfund.TIMEZONE),
                 srcprice[0].time,
             )
+
+
+
+class FundPaginationRegression(unittest.TestCase):
+    @staticmethod
+    def page(index, rows, total=2):
+        value = mock.Mock(status_code=200)
+        value.json.return_value = {"ErrCode": 0, "PageIndex": index,
+                                  "TotalCount": total, "Data": {"LSJZList": rows}}
+        return value
+
+    @staticmethod
+    def row(day, value="1.2"):
+        return {"FSRQ": day, "DWJZ": value, "NAVTYPE": "1", "ACTUALSYI": ""}
+
+    def fetch(self):
+        return eastmoneyfund.get_price_series(
+            "022947", datetime.datetime(2026, 9, 1, tzinfo=eastmoneyfund.TIMEZONE),
+            datetime.datetime(2026, 9, 11, tzinfo=eastmoneyfund.TIMEZONE))
+
+    def test_all_pages_fetched(self):
+        pages = [self.page(1, [self.row("2026-09-11")]),
+                 self.page(2, [self.row("2026-09-10")])]
+        with mock.patch("requests.get", side_effect=pages) as get:
+            result = self.fetch()
+        self.assertEqual(2, len(result))
+        self.assertEqual([1, 2], [call.kwargs["params"]["pageIndex"]
+                                  for call in get.call_args_list])
+
+    def test_repeated_page_is_rejected(self):
+        page = self.page(1, [self.row("2026-09-11")])
+        with mock.patch("requests.get", return_value=page), self.assertRaises(ValueError):
+            self.fetch()
+
+    def test_truncated_pagination_is_rejected(self):
+        pages = [self.page(1, [self.row("2026-09-11")]), self.page(2, [])]
+        with mock.patch("requests.get", side_effect=pages), self.assertRaises(ValueError):
+            self.fetch()
+
+    def test_nonfinite_nav_is_rejected(self):
+        page = self.page(1, [self.row("2026-09-11", "NaN")], total=1)
+        with mock.patch("requests.get", return_value=page), self.assertRaises(ValueError):
+            self.fetch()
 
 
 if __name__ == "__main__":

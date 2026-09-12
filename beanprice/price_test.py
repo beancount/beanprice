@@ -7,6 +7,7 @@ import datetime
 import logging
 import shutil
 import sys
+import os
 import tempfile
 import types
 import unittest
@@ -213,10 +214,13 @@ class TestProcessArguments(unittest.TestCase):
             self.assertEqual([], jobs)
 
     def test_filename_exists(self):
-        with tempfile.NamedTemporaryFile("w") as tmpfile:
+        with tempfile.TemporaryDirectory() as temporary:
+            filename = os.path.join(temporary, "empty.bean")
+            with open(filename, "w", encoding="utf-8"):
+                pass
             with test_utils.capture("stderr"):
                 args, jobs, _, __ = run_with_args(
-                    price.process_args, ["--no-cache", tmpfile.name]
+                    price.process_args, ["--no-cache", filename]
                 )
                 self.assertEqual([], jobs)  # Empty file.
 

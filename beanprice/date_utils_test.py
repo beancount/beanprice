@@ -1,6 +1,7 @@
 __copyright__ = "Copyright (C) 2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
+import time
 import unittest
 import datetime
 import dateutil
@@ -27,6 +28,7 @@ class TestDateUtils(unittest.TestCase):
                 parse_date = date_utils.parse_date_liberally(case[0])
             self.assertEqual(const_date, parse_date)
 
+    @unittest.skipUnless(hasattr(time, "tzset"), "Requires POSIX process timezone switching")
     def test_intimezone(self):
         with date_utils.intimezone("America/New_York"):
             now_nyc = datetime.datetime.now()

@@ -3,6 +3,7 @@
 __copyright__ = "Copyright (C) 2018-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
+import contextlib
 import os
 import time
 import datetime
@@ -41,6 +42,8 @@ class TestOandaMisc(unittest.TestCase):
 
 class TimezoneTestBase:
     def setUp(self):
+        if not hasattr(time, "tzset"):
+            self.skipTest("Requires POSIX time.tzset to test the Berlin process timezone")
         tz_value = "Europe/Berlin"
         self.tz_old = os.environ.get("TZ", None)
         os.environ["TZ"] = tz_value
@@ -147,7 +150,8 @@ class TestOandaGetLatest(unittest.TestCase):
 
     def test_valid(self):
         for tzname in "America/New_York", "Europe/Berlin", "Asia/Tokyo":
-            with date_utils.intimezone(tzname):
+            with (date_utils.intimezone(tzname) if hasattr(time, "tzset")
+                  else contextlib.nullcontext()):
                 self._test_valid()
 
 
@@ -188,7 +192,8 @@ class TestOandaGetHistorical(TimezoneTestBase, unittest.TestCase):
 
     def test_valid_same_date(self):
         for tzname in "America/New_York", "Europe/Berlin", "Asia/Tokyo":
-            with date_utils.intimezone(tzname):
+            with (date_utils.intimezone(tzname) if hasattr(time, "tzset")
+                  else contextlib.nullcontext()):
                 self._check_valid(
                     datetime.date(2017, 1, 22),
                     datetime.datetime(2017, 1, 22, 16, 0, tzinfo=UTC),
@@ -197,7 +202,8 @@ class TestOandaGetHistorical(TimezoneTestBase, unittest.TestCase):
 
     def test_valid_before(self):
         for tzname in "America/New_York", "Europe/Berlin", "Asia/Tokyo":
-            with date_utils.intimezone(tzname):
+            with (date_utils.intimezone(tzname) if hasattr(time, "tzset")
+                  else contextlib.nullcontext()):
                 self._check_valid(
                     datetime.date(2017, 1, 23),
                     datetime.datetime(2017, 1, 23, 16, 0, tzinfo=UTC),
@@ -206,7 +212,8 @@ class TestOandaGetHistorical(TimezoneTestBase, unittest.TestCase):
 
     def test_valid_after(self):
         for tzname in "America/New_York", "Europe/Berlin", "Asia/Tokyo":
-            with date_utils.intimezone(tzname):
+            with (date_utils.intimezone(tzname) if hasattr(time, "tzset")
+                  else contextlib.nullcontext()):
                 self._check_valid(datetime.date(2017, 1, 20), None, None)
 
 

@@ -1,6 +1,8 @@
 __copyright__ = "Copyright (C) 2015-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
+import contextlib
+import time
 import datetime
 import json
 import textwrap
@@ -21,6 +23,7 @@ class MockResponse:
     def __init__(self, contents, status_code=requests.codes.ok):
         self.status_code = status_code
         self.contents = contents
+        self.text = "fixture-crumb"
 
     def json(self, **kwargs):
         return json.loads(self.contents, **kwargs)
@@ -63,7 +66,8 @@ class YahooFinancePriceFetcher(unittest.TestCase):
 
     def test_get_latest_price(self):
         for tzname in "America/New_York", "Europe/Berlin", "Asia/Tokyo":
-            with date_utils.intimezone(tzname):
+            with (date_utils.intimezone(tzname) if hasattr(time, "tzset")
+                  else contextlib.nullcontext()):
                 self._test_get_latest_price()
 
     def _test_get_historical_price(self):
@@ -139,7 +143,8 @@ class YahooFinancePriceFetcher(unittest.TestCase):
 
     def test_get_historical_price(self):
         for tzname in "America/New_York", "Europe/Berlin", "Asia/Tokyo":
-            with date_utils.intimezone(tzname):
+            with (date_utils.intimezone(tzname) if hasattr(time, "tzset")
+                  else contextlib.nullcontext()):
                 self._test_get_historical_price()
 
     def test_parse_response_error_status_code(self):
@@ -254,6 +259,29 @@ class YahooFinancePriceFetcher(unittest.TestCase):
                 datetime.datetime(2022, 2, 25, 9, 30, tzinfo=timezone), srcprice.time
             )
             self.assertEqual("USD", srcprice.quote_currency)
+
+
+
+class YahooLifecycleRegression(unittest.TestCase):
+    def test_constructor_does_not_use_network(self):
+        with mock.patch.object(yahoo.requests.Session, "get") as get:
+            yahoo.Source()
+        get.assert_not_called()
+
+    def test_historical_quote_uses_selected_row_not_future_loop_variable(self):
+        src = yahoo.Source()
+        src.crumb = "fixture-crumb"
+        zone = datetime.timezone.utc
+        rows = [(datetime.datetime(2024, 1, 5, 15, tzinfo=zone), Decimal("10")),
+                (datetime.datetime(2024, 1, 8, 15, tzinfo=zone), Decimal("99"))]
+        with mock.patch.object(yahoo, "get_price_series", return_value=(rows, "USD")):
+            quote = src.get_historical_price(
+                "TEST", datetime.datetime(2024, 1, 6, 16, tzinfo=zone))
+        self.assertEqual(Decimal("10"), quote.price)
+        self.assertEqual(datetime.date(2024, 1, 5), quote.time.date())
+
+    def test_native_currency_preferred_to_market_guess(self):
+        self.assertEqual("HKD", yahoo.parse_currency({"currency": "HKD"}))
 
 
 if __name__ == "__main__":

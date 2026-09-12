@@ -2,6 +2,8 @@ __copyright__ = "Copyright (C) 2018-2020  Martin Blais"
 __license__ = "GNU GPLv2"
 
 import datetime
+import contextlib
+import time
 import unittest
 from unittest import mock
 from decimal import Decimal
@@ -157,7 +159,8 @@ class QuandlPriceFetcher(unittest.TestCase):
 
     def test_valid_response(self):
         for tzname in "America/New_York", "Europe/Berlin", "Asia/Tokyo":
-            with date_utils.intimezone(tzname):
+            with (date_utils.intimezone(tzname) if hasattr(time, "tzset")
+                  else contextlib.nullcontext()):
                 self._test_valid_response()
 
     def test_non_standard_columns(self):

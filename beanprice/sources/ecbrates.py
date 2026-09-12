@@ -1,6 +1,6 @@
 """A source fetching exchange rates using European Central Bank's datasets
 
-This source leverages daily avarage rates to/from EUR. For other currency pairs
+This source leverages daily reference rates to/from EUR. For other currency pairs
 the final rate is derived by dividing rates to/from EUR.
 
 Valid tickers are in the form "XXX-YYY", such as "EUR-CHF", which denotes rate EUR->CHF
@@ -12,7 +12,7 @@ Timezone information: Input and output datetimes are specified via UTC
 timestamps.
 """
 
-from decimal import Decimal, getcontext
+from decimal import Decimal, InvalidOperation, localcontext
 
 import re
 import csv
@@ -49,7 +49,7 @@ def _get_rate_EUR_to_CCY(currency, date):
     if date is not None:
         params["endPeriod"] = date
     url = f"https://data-api.ecb.europa.eu/service/data/EXR/{symbol}"
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=30)
     if response.status_code != requests.codes.ok:
         raise ECBRatesError(
             f"Invalid response ({response.status_code}): {response.text}"
@@ -69,8 +69,17 @@ def _get_rate_EUR_to_CCY(currency, date):
         rate = observation.get("OBS_VALUE")
         obs_date = observation.get("TIME_PERIOD")
         decimals = observation.get("DECIMALS")
-        precision = int(decimals) + len(rate.split(".")[0].lstrip("0"))
-        return Decimal(rate), obs_date, precision
+        try:
+            precision = int(decimals) + len(rate.split(".")[0].lstrip("0"))
+            parse(obs_date)
+            value = Decimal(rate)
+        except (InvalidOperation, TypeError, ValueError, AttributeError) as exc:
+            raise ECBRatesError("Invalid ECB rate") from exc
+        if not value.is_finite() or value <= 0:
+            raise ECBRatesError("Non-positive or non-finite ECB rate")
+        if date is not None and obs_date > date:
+            raise ECBRatesError("ECB returned a future observation")
+        return value, obs_date, precision
 
 
 def _get_quote(ticker, date):
@@ -118,12 +127,10 @@ vs. ({symbol}, {symbol_rate_date})"
 (EUR{symbol}: {eur_to_symbol}, EUR{base}: {eur_to_base})"
         )
 
-    # Derive precision from sunrates (must be at least 5)
-    minimal_precision = 5
-    getcontext().prec = max(
-        minimal_precision, min(base_rate_precision, symbol_rate_precision)
-    )
-    price = eur_to_symbol / eur_to_base
+    # Cross-rate division must never alter the caller's decimal context.
+    with localcontext() as context:
+        context.prec = 28
+        price = eur_to_symbol / eur_to_base
     time = parse(base_rate_date).replace(tzinfo=tz.tzutc())
     return source.SourcePrice(price, time, symbol)
 
