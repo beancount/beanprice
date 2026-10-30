@@ -112,6 +112,51 @@ class TSPFinancePriceFetcher(unittest.TestCase):
         )
         self.assertEqual("USD", srcprice.quote_currency)
 
+    def test_get_historical_price_ignores_newer_rows(self):
+        response = MockResponse(textwrap.dedent(HISTORIC_DATA))
+        with mock.patch("curl_cffi.requests.get", return_value=response):
+            srcprice = tsp.Source().get_historical_price(
+                "CFund", time=datetime.datetime(2020, 6, 10)
+            )
+
+        self.assertEqual(Decimal("47.0540"), srcprice.price)
+        self.assertEqual(
+            datetime.datetime(2020, 6, 10, 16, 0, 0, tzinfo=tsp.TIMEZONE), srcprice.time
+        )
+
+    def test_get_historical_price_uses_previous_trading_day(self):
+        response = MockResponse(textwrap.dedent(HISTORIC_DATA))
+        with mock.patch("curl_cffi.requests.get", return_value=response):
+            srcprice = tsp.Source().get_historical_price(
+                "CFund", time=datetime.datetime(2020, 6, 14)
+            )
+
+        self.assertEqual(Decimal("44.8769"), srcprice.price)
+        self.assertEqual(
+            datetime.datetime(2020, 6, 12, 16, 0, 0, tzinfo=tsp.TIMEZONE), srcprice.time
+        )
+
+    def test_get_historical_price_uses_tsp_date_for_aware_time(self):
+        response = MockResponse(textwrap.dedent(HISTORIC_DATA))
+        with mock.patch("curl_cffi.requests.get", return_value=response):
+            srcprice = tsp.Source().get_historical_price(
+                "CFund",
+                time=datetime.datetime(2020, 6, 11, 0, 30, tzinfo=datetime.timezone.utc),
+            )
+
+        self.assertEqual(Decimal("47.0540"), srcprice.price)
+        self.assertEqual(
+            datetime.datetime(2020, 6, 10, 16, 0, 0, tzinfo=tsp.TIMEZONE), srcprice.time
+        )
+
+    def test_get_historical_price_raises_when_no_trade_day_exists(self):
+        response = MockResponse(textwrap.dedent(HISTORIC_DATA))
+        with mock.patch("curl_cffi.requests.get", return_value=response):
+            with self.assertRaisesRegex(tsp.TSPError, "on or before 2020-06-01"):
+                tsp.Source().get_historical_price(
+                    "CFund", time=datetime.datetime(2020, 6, 1)
+                )
+
     def test_get_historical_price_L2060(self):
         # This fund did not exist until 01 Jul 2020. Ensuring we get a Decimal(0.0) back.
         response = MockResponse(textwrap.dedent(HISTORIC_DATA))

@@ -135,11 +135,19 @@ class Source(source.Source):
                 )
             )
 
+        if time.tzinfo is None:
+            requested_date = time.date()
+        else:
+            requested_date = time.astimezone(TIMEZONE).date()
+
         url = "https://www.tsp.gov/data/fund-price-history.csv"
         payload = {
-            # Grabbing the last fourteen days of data in event the markets were closed.
-            "startdate": (time - datetime.timedelta(days=14)).strftime("%Y%m%d"),
-            "enddate": time.strftime("%Y%m%d"),
+            # The endpoint currently returns its full history regardless of these
+            # parameters. Keep supplying them in case its filtering is restored.
+            "startdate": (requested_date - datetime.timedelta(days=14)).strftime(
+                "%Y%m%d"
+            ),
+            "enddate": requested_date.strftime("%Y%m%d"),
             "download": "0",
             "Lfunds": "1",
             "InvFunds": "1",
@@ -147,13 +155,21 @@ class Source(source.Source):
 
         response = requests.get(url, params=payload, impersonate="chrome")
         result = parse_response(response)
-        trade_day = next(iter(result.items()))
-        prices = trade_day[1]
+        try:
+            trade_time, prices = next(
+                (trade_time, prices)
+                for trade_time, prices in result.items()
+                if trade_time.date() <= requested_date
+            )
+        except StopIteration as exc:
+            raise TSPError(
+                "No TSP prices available on or before {}.".format(
+                    requested_date.isoformat()
+                )
+            ) from exc
 
         try:
             price = prices[TSP_FUND_NAMES.index(fund)]
-
-            trade_time = trade_day[0]
         except KeyError as exc:
             raise TSPError("Invalid response from TSP: {}".format(repr(result))) from exc
 
