@@ -32,6 +32,11 @@ class TestRetryingUrlopen(unittest.TestCase):
         ):
             self.assertIsNone(net_utils.retrying_urlopen("http://nowhere.com"))
 
+    def test_zero_max_retry(self):
+        with mock.patch("urllib.request.urlopen") as urlopen:
+            self.assertIsNone(net_utils.retrying_urlopen("http://nowhere.com", max_retry=0))
+            urlopen.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

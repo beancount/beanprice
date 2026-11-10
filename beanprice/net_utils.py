@@ -19,6 +19,7 @@ def retrying_urlopen(url, timeout=5, max_retry=5):
     Returns:
       The contents of the fetched URL.
     """
+    response = None
     for _ in range(max_retry):
         logging.debug("Reading %s", url)
         try:
